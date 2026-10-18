@@ -30,11 +30,11 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .entete { padding: 22px 0 10px; }
 .entete .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .marque { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.marque img { width: 44px; height: 44px; border-radius: 50%; }
+.marque img { display: block; height: 44px; width: auto; }
 .marque span { font: 400 1.3rem/1 var(--titre); letter-spacing: .01em; }
 .lien-pinterest { font-size: .95rem; color: var(--taupe); text-decoration: none; border-bottom: 1px solid var(--trait); padding-bottom: 2px; }
 .lien-pinterest { white-space: nowrap; }
-@media (max-width: 420px) { .marque span { font-size: 1.1rem; white-space: nowrap; } .marque img { width: 38px; height: 38px; } .lien-pinterest { font-size: .85rem; } }
+@media (max-width: 420px) { .marque span { font-size: 1.1rem; white-space: nowrap; } .marque img { height: 30px; } .lien-pinterest { font-size: .85rem; } }
 .lien-pinterest:hover { color: var(--noyer); border-color: var(--noyer); }
 
 /* Accueil */
