@@ -123,3 +123,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .texte h2 { font: 400 1.4rem/1.2 var(--titre); margin: 32px 0 8px; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+.form-etat { min-height: 1.4em; margin: 8px 0 0; font-size: .95rem; color: var(--taupe); }
+.form-etat.ok { color: #3d6b45; font-weight: 600; }
+.form-etat.erreur { color: #9a3b2e; font-weight: 600; }
+.formulaire .bouton:disabled { opacity: .6; cursor: wait; }
