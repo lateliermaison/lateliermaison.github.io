@@ -1,0 +1,123 @@
+/* L'Atelier Maison — feuille de style
+   Couleurs : avoine (fond), craie (surfaces), noyer (texte), taupe (texte secondaire), laiton (repères numérotés) */
+:root {
+  --avoine: #F2ECE3;
+  --craie: #FBF8F3;
+  --noyer: #2E2219;
+  --taupe: #76675A;
+  --laiton: #A07B3F;
+  --laiton-clair: #E9DCC3;
+  --trait: #DED3C4;
+  --titre: "Marcellus", Georgia, serif;
+  --texte: "Figtree", system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--avoine);
+  color: var(--noyer);
+  font: 400 1.0625rem/1.6 var(--texte);
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+
+/* En-tête */
+.entete { padding: 22px 0 10px; }
+.entete .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.marque { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.marque img { width: 44px; height: 44px; border-radius: 50%; }
+.marque span { font: 400 1.3rem/1 var(--titre); letter-spacing: .01em; }
+.lien-pinterest { font-size: .95rem; color: var(--taupe); text-decoration: none; border-bottom: 1px solid var(--trait); padding-bottom: 2px; }
+.lien-pinterest:hover { color: var(--noyer); border-color: var(--noyer); }
+
+/* Accueil */
+.accueil-titre { padding: 48px 0 36px; max-width: 34ch; }
+.accueil-titre h1 { font: 400 clamp(2.4rem, 7vw, 4.2rem)/1.04 var(--titre); margin: 0 0 18px; letter-spacing: -.01em; }
+.accueil-titre p { margin: 0; color: var(--taupe); font-size: 1.15rem; }
+
+.grille { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 16px; padding-bottom: 64px; }
+@media (min-width: 760px) { .grille { grid-template-columns: repeat(3, 1fr); gap: 44px 28px; } }
+.carte { text-decoration: none; display: block; }
+.carte figure { margin: 0; overflow: hidden; border-radius: 180px 180px 14px 14px; background: var(--trait); aspect-ratio: 2 / 3; }
+.carte img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.carte:hover img { transform: scale(1.03); }
+.carte h2 { font: 400 1.25rem/1.25 var(--titre); margin: 14px 0 4px; }
+.carte p { margin: 0; color: var(--taupe); font-size: .92rem; }
+.vide { padding: 40px 0 80px; color: var(--taupe); }
+
+/* Page look */
+.retour { display: inline-block; margin: 18px 0 8px; color: var(--taupe); font-size: .95rem; text-decoration: none; }
+.retour:hover { color: var(--noyer); }
+.look { display: grid; gap: 28px; padding-bottom: 56px; }
+@media (min-width: 900px) { .look { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; } .look-visuel { position: sticky; top: 20px; } }
+
+.look-visuel { margin: 0; }
+.scene { position: relative; border-radius: 220px 220px 16px 16px; overflow: hidden; background: var(--trait); }
+.scene img { width: 100%; }
+.pastille {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 600 .95rem/1 var(--texte); color: var(--noyer);
+  background: var(--craie); border: 2px solid var(--laiton);
+  box-shadow: 0 0 0 4px rgba(251, 248, 243, .35);
+  cursor: pointer; padding: 0;
+  transition: transform .2s ease, background .2s ease, color .2s ease;
+}
+.pastille:hover, .pastille.actif { background: var(--laiton); color: var(--craie); transform: translate(-50%, -50%) scale(1.12); }
+.look-visuel figcaption { margin-top: 10px; font-size: .85rem; color: var(--taupe); }
+
+.look-texte h1 { font: 400 clamp(2.2rem, 6vw, 3.4rem)/1.05 var(--titre); margin: 0 0 6px; }
+.look-num { color: var(--laiton); font: 400 1.05rem/1.4 var(--titre); margin: 0 0 14px; }
+.look-intro { margin: 0 0 26px; max-width: 46ch; color: #4A3B30; }
+
+.articles { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--trait); }
+.article { display: grid; grid-template-columns: 40px 1fr; gap: 6px 14px; padding: 18px 8px; border-bottom: 1px solid var(--trait); border-radius: 10px; transition: background .25s ease; scroll-margin-top: 90px; }
+.article.actif { background: var(--laiton-clair); }
+.article-num { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--laiton); display: grid; place-items: center; font-weight: 600; font-size: .95rem; }
+.article h2 { font: 600 1.05rem/1.35 var(--texte); margin: 4px 0 2px; }
+.article p { margin: 0; color: var(--taupe); font-size: .95rem; }
+.article-bas { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 10px; }
+.prix { font-weight: 600; }
+.bouton {
+  display: inline-block; text-decoration: none;
+  background: var(--noyer); color: var(--craie);
+  padding: 11px 18px; border-radius: 999px; font-weight: 600; font-size: .95rem;
+}
+.bouton:hover { background: #4A372A; }
+.bouton.inactif { background: transparent; color: var(--taupe); border: 1px dashed var(--trait); }
+.etiquette-proche { font-size: .82rem; color: var(--taupe); font-style: italic; }
+
+.note-look { margin-top: 22px; font-size: .88rem; color: var(--taupe); max-width: 52ch; }
+.bandeau-brouillon { background: var(--laiton); color: var(--craie); text-align: center; padding: 8px 16px; font-size: .9rem; }
+
+/* Pied de page */
+.pied { border-top: 1px solid var(--trait); padding: 28px 0 40px; color: var(--taupe); font-size: .9rem; }
+.pied .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; justify-content: space-between; }
+.pied p { margin: 0; max-width: 60ch; }
+.pied a { color: var(--taupe); }
+
+.pied-liens { display: flex; gap: 20px; }
+
+/* Formulaire de contact */
+.formulaire { display: grid; gap: 6px; max-width: 520px; margin-top: 20px; }
+.formulaire label { font-weight: 600; font-size: .95rem; margin-top: 10px; }
+.formulaire input, .formulaire textarea {
+  font: inherit; color: var(--noyer); background: var(--craie);
+  border: 1px solid var(--trait); border-radius: 10px; padding: 12px 14px;
+}
+.formulaire input:focus-visible, .formulaire textarea:focus-visible { outline: 3px solid var(--laiton); outline-offset: 1px; }
+.formulaire .bouton { margin-top: 14px; justify-self: start; border: 0; cursor: pointer; }
+.piege { position: absolute; left: -9999px; }
+
+/* Pages de texte */
+.texte { max-width: 68ch; padding: 32px 0 64px; }
+.texte h1 { font: 400 2.4rem/1.1 var(--titre); margin: 0 0 20px; }
+.texte h2 { font: 400 1.4rem/1.2 var(--titre); margin: 32px 0 8px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
