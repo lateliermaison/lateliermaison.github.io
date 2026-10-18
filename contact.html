@@ -27,7 +27,39 @@
 <section class="texte">
 <h1>Contact</h1>
 <p>Une question sur un look, un article introuvable, une idée de pièce à décorer ? Écris-moi, je réponds sous quelques jours.</p>
-<p><a class="bouton" href="mailto:lateliermaison.deco.contact@gmail.com?subject=Message%20depuis%20le%20site">Écrire un e-mail</a></p><p class="note-look">Adresse : lateliermaison.deco.contact@gmail.com</p>
+<form class="formulaire" action="https://formspree.io/f/mwlvzrwl" method="POST">
+  <label for="nom">Ton prénom</label>
+  <input id="nom" name="nom" type="text" autocomplete="given-name" required>
+  <label for="email">Ton adresse e-mail</label>
+  <input id="email" name="email" type="email" autocomplete="email" required>
+  <label for="message">Ton message</label>
+  <textarea id="message" name="message" rows="6" required></textarea>
+  <input type="hidden" name="_subject" value="Message depuis le site L'Atelier Maison">
+  <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="piege" aria-hidden="true">
+  <button class="bouton" type="submit">Envoyer le message</button>
+  <p class="form-etat" role="status" aria-live="polite"></p>
+</form>
+<p class="note-look">Ton prénom, ton e-mail et ton message servent uniquement à te répondre. Tu peux aussi écrire directement à <a href="mailto:lateliermaison.deco.contact@gmail.com">lateliermaison.deco.contact@gmail.com</a>.</p>
+<script>
+(function () {
+  var f = document.querySelector('.formulaire'), etat = f.querySelector('.form-etat'), btn = f.querySelector('button');
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    btn.disabled = true; etat.className = 'form-etat'; etat.textContent = 'Envoi en cours…';
+    fetch(f.action, { method: 'POST', body: new FormData(f), headers: { 'Accept': 'application/json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error();
+        f.reset(); etat.className = 'form-etat ok';
+        etat.textContent = 'Merci, ton message est bien parti. Je te réponds sous quelques jours.';
+      })
+      .catch(function () {
+        etat.className = 'form-etat erreur';
+        etat.textContent = "Le message n'a pas pu partir. Réessaie dans un instant, ou écris directement à lateliermaison.deco.contact@gmail.com.";
+      })
+      .finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
 </section>
 </main>
 <footer class="pied"><div class="wrap">
