@@ -127,3 +127,5 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .form-etat.ok { color: #3d6b45; font-weight: 600; }
 .form-etat.erreur { color: #9a3b2e; font-weight: 600; }
 .formulaire .bouton:disabled { opacity: .6; cursor: wait; }
+.lien-epingle { margin: 22px 0 0; }
+.lien-epingle a { color: var(--noyer); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--laiton); }
