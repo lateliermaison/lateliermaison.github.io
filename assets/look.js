@@ -4,33 +4,38 @@
    - ouverture hors de l'appli Pinterest (Safari) et des liens Amazon dans l'appli Amazon. */
 (function () {
   var UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && 'ontouchend' in document);
-  var PINTEREST = /Pinterest/i.test(UA);
+  var PINTEREST = /Pinterest/i.test(UA), ANDROID = /Android/i.test(UA);
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var cache = {};
 
   /* ---------- Sortir de l'appli Pinterest ---------- */
-  function versSafari(url) { return 'x-safari-' + url; }
+  // Ouvrir une adresse hors de l'appli Pinterest : iPhone/iPad -> navigateur du téléphone (Safari), Android -> navigateur par défaut.
+  function versNavigateur(url) {
+    if (ANDROID) return 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+    return 'x-safari-' + url;
+  }
   function bandeauPinterest() {
-    if (!PINTEREST || !IOS || document.querySelector('.bandeau-safari')) return;
+    if (!PINTEREST || !(IOS || ANDROID) || document.querySelector('.bandeau-safari')) return;
     var d = document.createElement('div');
     d.className = 'bandeau-safari';
-    d.innerHTML = '<span>Pour ouvrir les articles dans l’appli Amazon, ouvre cette page dans Safari.</span>' +
-      '<a class="bandeau-safari-btn" href="' + versSafari(location.href) + '">Ouvrir dans Safari</a>' +
-      '<small>Sinon : touche ••• en haut, puis « Ouvrir dans le navigateur ».</small>';
+    d.innerHTML = '<span>Pour ouvrir les articles dans l\u2019appli Amazon, ouvre cette page dans ton navigateur.</span>' +
+      '<a class="bandeau-safari-btn" href="' + versNavigateur(location.href) + '">Ouvrir dans le navigateur</a>' +
+      '<small>Sinon : touche ' + (ANDROID ? '\u22ee' : '\u2022\u2022\u2022') + ' en haut, puis \u00ab\u00a0Ouvrir dans le navigateur\u00a0\u00bb.</small>';
     document.body.insertBefore(d, document.body.firstChild);
   }
 
   /* ---------- Liens Amazon ---------- */
   function liensAmazon(racine) {
-    if (!IOS) return;
+    if (!IOS && !ANDROID) return;
     racine.querySelectorAll('a[href*="amazon."]').forEach(function (a) {
       if (a.dataset.pret) return; a.dataset.pret = '1';
-      a.removeAttribute('target');  // dans Safari, un lien amazon.fr ouvre l'appli Amazon si elle est installée
+      if (IOS) a.removeAttribute('target');  // dans Safari, un lien amazon.fr ouvre l'appli Amazon si elle est installée
       if (!PINTEREST) return;
-      // Dans l'appli Pinterest : ouvrir directement la fiche Amazon dans Safari (choix d'AIRKATE, 24/10/2026).
+      // Dans l'appli Pinterest : ouvrir directement la fiche Amazon hors de Pinterest (choix d'AIRKATE, 24/10/2026) ;
+      // sur Android, l'appli Amazon s'ouvre si elle est installée, sinon le navigateur.
       a.addEventListener('click', function (ev) {
         ev.preventDefault();
-        location.href = versSafari(a.href);
+        location.href = versNavigateur(a.href);
       });
     });
   }
