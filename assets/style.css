@@ -153,6 +153,23 @@ main { touch-action: pan-y pinch-zoom; }
 @media (max-width: 899px) { .look { will-change: transform; } }
 .note-amazon { flex-basis: 100%; margin: 0; font-size: .85rem; color: var(--noyer); font-weight: 600; }
 /* Appli Pinterest : inviter à ouvrir dans Safari */
-.bandeau-safari { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 12px 16px; background: var(--noyer); color: var(--craie); font-size: .9rem; }
-.bandeau-safari-btn { display: inline-block; background: var(--craie); color: var(--noyer); text-decoration: none; font-weight: 600; padding: 8px 16px; border-radius: 999px; }
-.bandeau-safari small { opacity: .8; font-size: .78rem; }
+.bandeau-safari { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; padding: 9px 14px; background: var(--noyer); color: var(--craie); font-size: .9rem; }
+.bandeau-safari-btn { display: inline-block; background: var(--craie); color: var(--noyer); text-decoration: none; font-weight: 600; font-size: .85rem; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
+
+/* Image du look toujours entière à l'écran (iPhone et iPad, portrait et paysage, 24/10/2026) */
+.scene { width: min(100%, calc((100vh - 40px) * 2 / 3)); margin-inline: auto; }
+@supports (height: 100dvh) { .scene { width: min(100%, calc((100dvh - 40px) * 2 / 3)); } }
+@media (min-width: 900px) {
+  .scene { width: min(100%, calc((100vh - 90px) * 2 / 3)); }
+  @supports (height: 100dvh) { .scene { width: min(100%, calc((100dvh - 90px) * 2 / 3)); } }
+  .look-visuel figcaption { text-align: center; }
+}
+/* Téléphone en paysage : image à gauche, articles à droite, pastilles plus petites */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 560px) {
+  .look { grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
+  .look-visuel { position: sticky; top: 10px; }
+  .scene { width: calc((100vh - 50px) * 2 / 3); }
+  @supports (height: 100dvh) { .scene { width: calc((100dvh - 50px) * 2 / 3); } }
+  .look-visuel figcaption { display: none; }
+  .pastille { width: 24px; height: 24px; font-size: .72rem; box-shadow: 0 0 0 2px rgba(251, 248, 243, .35); }
+}
