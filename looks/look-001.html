@@ -50,67 +50,89 @@
     <ol class="articles">
 <li class="article" id="article-1" data-n="1">
   <span class="article-num" aria-hidden="true">1</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Plaid crème à côtes</h2><p>Fausse fourrure très douce, 150 × 200 cm.</p></div>
   <div class="article-bas"><span class="prix">26,99 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0D418FVHY" rel="sponsored nofollow noopener" target="_blank">Voir sur Amazon</a></div>
 </li>
 <li class="article" id="article-2" data-n="2">
   <span class="article-num" aria-hidden="true">2</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Suspension wabi-sabi texturée</h2><p>Forme de galet, finition granuleuse blanc cassé, 40 cm de diamètre.</p></div>
   <div class="article-bas"><span class="prix">72,99 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0CWNZNZMF" rel="sponsored nofollow noopener" target="_blank">Voir sur Amazon</a></div>
 </li>
 <li class="article" id="article-3" data-n="3">
   <span class="article-num" aria-hidden="true">3</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Tapis shaggy beige sable</h2><p>Poils longs et moelleux, 160 × 230 cm (existe en d&#x27;autres tailles).</p></div>
   <div class="article-bas"><span class="prix">58,99 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0DSK75L4G" rel="sponsored nofollow noopener" target="_blank">Voir sur Amazon</a></div>
 </li>
 <li class="article" id="article-4" data-n="4">
   <span class="article-num" aria-hidden="true">4</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Vase céramique beige et herbe de pampa</h2><p>Vase à renflements de 29 cm de haut et lot de 10 tiges de pampa naturelle de 100 cm, à recouper à la hauteur voulue. Sur l&#x27;image, le bouquet paraît plus grand que nature.</p></div>
   <div class="article-bas"><span class="prix">29,99 € + 29,99 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0C6B2774J" rel="sponsored nofollow noopener" target="_blank">Voir le vase</a><a class="bouton" href="https://www.amazon.fr/dp/B0CJDVX6ZL" rel="sponsored nofollow noopener" target="_blank">Voir la pampa</a></div>
 </li>
 <li class="article" id="article-5" data-n="5">
   <span class="article-num" aria-hidden="true">5</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Pouf rond bouclette avec rangement</h2><p>4 boudins en tissu bouclette crème, couvercle amovible, Ø 42 × 47 cm.</p></div>
   <div class="article-bas"><span class="prix">environ 48 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0D9LPYJH3" rel="sponsored nofollow noopener" target="_blank">Voir sur Amazon</a></div>
 </li>
 <li class="article" id="article-6" data-n="6">
   <span class="article-num" aria-hidden="true">6</span>
-  <button class="vers-image" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
   <div><h2>Bougies LED en verre, lot de 3</h2><p>Flamme vacillante et guirlande lumineuse, avec télécommande et minuteur. Coloris ivoire.</p></div>
   <div class="article-bas"><span class="prix">environ 21 €</span><a class="bouton" href="https://www.amazon.fr/dp/B0DKJHR8TH" rel="sponsored nofollow noopener" target="_blank">Voir sur Amazon</a></div>
 </li>
     </ol>
     <p class="lien-epingle"><a href="https://fr.pinterest.com/pin/1105985621023704198/" rel="noopener" target="_blank">Enregistrer ce look sur Pinterest</a></p>
     <nav class="nav-looks" aria-label="Autres looks"><span></span><a class="nav-suiv" href="look-002.html" rel="next">Look n°2 &#8250;</a></nav>
+    <link rel="prefetch" href="look-002.html"><link rel="prefetch" href="../assets/img/looks/look002-salon-noel-beige-dore.jpg">
     <p class="note-look">Image d'inspiration générée par IA. Les prix sont indicatifs et peuvent changer sur Amazon.</p>
   </div>
 </article>
+<button class="haut" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
 <script>
-document.querySelectorAll('.vers-image').forEach(function (b) {
-  b.addEventListener('click', function () {
-    document.querySelector('.look-visuel').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  });
-});
 (function () {
+  var visuel = document.querySelector('.look-visuel'), haut = document.querySelector('.haut');
+  if ('IntersectionObserver' in window && visuel && haut) {
+    new IntersectionObserver(function (es) {
+      var hors = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+      haut.classList.toggle('visible', hors);
+    }).observe(visuel);
+    haut.addEventListener('click', function () {
+      visuel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+  }
+})();
+(function () {
+  // Glisser vers la gauche = look suivant (numéro plus grand), vers la droite = look précédent. La page suit le doigt.
   var prec = "", suiv = "look-002.html";
-  var x0 = null, y0 = 0, t0 = 0;
+  var main = document.querySelector('main'), x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth;
+  try {
+    var d = sessionStorage.getItem('glisse');
+    if (d) { sessionStorage.removeItem('glisse'); main.classList.add(d === 'g' ? 'arrivee-droite' : 'arrivee-gauche'); }
+  } catch (e) {}
+  function poser(v, t) { main.style.transition = t ? 'transform .24s ease, opacity .24s ease' : 'none'; main.style.transform = v ? 'translateX(' + v + 'px)' : ''; main.style.opacity = v ? String(1 - Math.min(Math.abs(v) / W, 1) * .45) : ''; }
   document.addEventListener('touchstart', function (ev) {
     if (ev.touches.length !== 1) { x0 = null; return; }
-    x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now();
+    x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; dx = 0; mode = null; W = innerWidth;
   }, { passive: true });
-  document.addEventListener('touchend', function (ev) {
+  document.addEventListener('touchmove', function (ev) {
     if (x0 === null) return;
-    var dx = ev.changedTouches[0].clientX - x0, dy = ev.changedTouches[0].clientY - y0;
-    x0 = null;
-    if (Date.now() - t0 > 800 || Math.abs(dx) < 70 || Math.abs(dx) < 1.8 * Math.abs(dy)) return;
-    var cible = dx < 0 ? suiv : prec;  // glisser vers la gauche = look suivant, vers la droite = look précédent
-    if (cible) { document.body.classList.add(dx < 0 ? 'sortie-gauche' : 'sortie-droite'); setTimeout(function () { location.href = cible; }, 160); }
+    var mx = ev.touches[0].clientX - x0, my = ev.touches[0].clientY - y0;
+    if (!mode) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; mode = Math.abs(mx) > Math.abs(my) * 1.2 ? 'h' : 'v'; }
+    if (mode !== 'h') return;
+    dx = mx;
+    poser((dx < 0 ? suiv : prec) ? dx : dx * .25, false);
   }, { passive: true });
+  function fin() {
+    if (x0 === null) return; x0 = null;
+    if (mode !== 'h') return;
+    var cible = dx < 0 ? suiv : prec;
+    if (cible && Math.abs(dx) > W * .22) {
+      poser(dx < 0 ? -W : W, true);
+      try { sessionStorage.setItem('glisse', dx < 0 ? 'g' : 'd'); } catch (e) {}
+      setTimeout(function () { location.href = cible; }, 200);
+    } else poser(0, true);
+  }
+  document.addEventListener('touchend', fin);
+  document.addEventListener('touchcancel', fin);
+  addEventListener('pageshow', function (e) { if (e.persisted) poser(0, false); });
 })();
 document.querySelectorAll('.pastille').forEach(function (b) {
   b.addEventListener('click', function () {
