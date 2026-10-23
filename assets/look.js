@@ -18,9 +18,8 @@
     if (!PINTEREST || !(IOS || ANDROID) || document.querySelector('.bandeau-safari')) return;
     var d = document.createElement('div');
     d.className = 'bandeau-safari';
-    d.innerHTML = '<span>Pour ouvrir les articles dans l\u2019appli Amazon, ouvre cette page dans ton navigateur.</span>' +
-      '<a class="bandeau-safari-btn" href="' + versNavigateur(location.href) + '">Ouvrir dans le navigateur</a>' +
-      '<small>Sinon : ouvre le menu de la page (' + (ANDROID ? '\u22ee ou \u2022\u2022\u2022' : '\u2022\u2022\u2022') + ') et choisis \u00ab\u00a0Ouvrir dans le navigateur\u00a0\u00bb' + (ANDROID ? ' (ou le nom de ton navigateur)' : '') + '.</small>';
+    d.innerHTML = '<span>Acheter sur l\u2019appli Amazon\u00a0?</span>' +
+      '<a class="bandeau-safari-btn" href="' + versNavigateur(location.href) + '">Ouvrir dans le navigateur</a>';
     document.body.insertBefore(d, document.body.firstChild);
   }
 
