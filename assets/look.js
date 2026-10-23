@@ -27,19 +27,28 @@
       if (a.dataset.pret) return; a.dataset.pret = '1';
       a.removeAttribute('target');  // dans Safari, un lien amazon.fr ouvre l'appli Amazon si elle est installée
       if (!PINTEREST) return;
-      a.addEventListener('click', function (ev) {  // dans l'appli Pinterest : appli Amazon, sinon Safari, sinon le lien normal
+      // Dans l'appli Pinterest, l'appli Amazon ne s'ouvre pas : on rouvre tout de suite cette page dans Safari, sur l'article,
+      // et là un seul toucher sur « Voir sur Amazon » ouvre l'appli Amazon (connectée).
+      var li = a.closest('.article');
+      a.addEventListener('click', function (ev) {
         ev.preventDefault();
-        var url = a.href, parti = false;
-        var sortie = function () { if (document.hidden) parti = true; };
-        document.addEventListener('visibilitychange', sortie);
-        location.href = 'com.amazon.mobile.shopping.web://' + url.replace(/^https?:\/\//, '');
-        setTimeout(function () {
-          if (parti) return;
-          location.href = versSafari(url);
-          setTimeout(function () { if (!parti && !document.hidden) location.href = url; }, 1500);
-        }, 1400);
+        var n = li ? li.dataset.n : '';
+        location.href = versSafari(location.origin + location.pathname + (n ? '?amazon=' + n + '#article-' + n : ''));
       });
     });
+  }
+
+  function arriveeAmazon(main) {
+    var m = /[?&]amazon=(\d+)/.exec(location.search);
+    if (!m || PINTEREST) return;
+    var li = main.querySelector('#article-' + m[1]);
+    if (!li) return;
+    li.classList.add('actif');
+    var note = document.createElement('p'); note.className = 'note-amazon';
+    note.textContent = 'Touche \u00ab Voir sur Amazon \u00bb pour l\u2019ouvrir dans l\u2019appli Amazon.';
+    var bas = li.querySelector('.article-bas'); if (bas) bas.appendChild(note);
+    setTimeout(function () { li.scrollIntoView({ block: 'center' }); }, 60);
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
   }
 
   /* ---------- Flèche flottante ---------- */
@@ -96,18 +105,22 @@
 
   function carrousel() {
     if (!document.querySelector('main .look')) return;
-    var x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth, fantome = null, page = null, enCours = false, entete = document.querySelector('.entete');
+    var x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth, fantome = null, page = null, enCours = false, hautFantome = 0;
     function bouger(els, v, anim) { els.forEach(function (el) { if (!el) return; el.style.transition = anim ? 'transform .26s cubic-bezier(.2,.7,.2,1)' : 'none'; el.style.transform = v === null ? '' : 'translateX(' + v + 'px)'; }); }
-    function actuels() { return [entete, document.querySelector('main')]; }
+    function actuels() { return [document.querySelector('main .look')]; }
     function creerFantome(sens) {
       var v = voisins(), url = sens < 0 ? v.d : v.g;
       if (!url) return;
       charger(url).then(function (p) {
         if (!p || mode !== 'h' || fantome) return;
         page = { url: url, p: p, sens: sens };
+        var look = document.querySelector('main .look'), nouveau = p.main.querySelector('.look');
+        if (!look || !nouveau) return;
+        hautFantome = Math.max(look.getBoundingClientRect().top, 0);
         fantome = document.createElement('div'); fantome.className = 'fantome';
-        if (entete) fantome.appendChild(entete.cloneNode(true));
-        fantome.appendChild(p.main.cloneNode(true));
+        fantome.style.top = hautFantome + 'px';
+        var w = document.createElement('div'); w.className = 'wrap'; w.appendChild(nouveau.cloneNode(true));
+        fantome.appendChild(w);
         document.body.appendChild(fantome);
         bouger([fantome], (sens < 0 ? W : -W) + dx, false);
       });
@@ -137,6 +150,8 @@
         bouger([fantome], 0, true);
         var pp = page;
         setTimeout(function () { basculer(pp); }, 270);
+      } else if (!fantome && Math.abs(dx) > W * .2 && (dx < 0 ? voisins().d : voisins().g)) {
+        location.href = dx < 0 ? voisins().d : voisins().g;  // page voisine pas encore chargée : navigation classique
       } else {
         bouger(actuels(), 0, true);
         if (fantome) { var f = fantome, s = page ? page.sens : -1; bouger([f], s < 0 ? W : -W, true); setTimeout(function () { f.remove(); }, 280); }
@@ -145,12 +160,14 @@
       }
     }
     function basculer(pp) {
-      var ancien = document.querySelector('main'), neuf = pp.p.main.cloneNode(true);
+      var ancien = document.querySelector('main'), neuf = pp.p.main.cloneNode(true), y = window.scrollY;
       ancien.parentNode.replaceChild(neuf, ancien);
       document.title = pp.p.titre;
       try { history.pushState({ look: pp.url }, '', pp.url); } catch (e) {}
-      window.scrollTo(0, 0);
-      bouger([entete], null, false);
+      var nl = neuf.querySelector('.look');
+      // même position à l'écran que la page qui vient d'arriver en glissant : rien ne saute
+      if (hautFantome > 0 || !nl) window.scrollTo(0, y);
+      else window.scrollTo(0, nl.getBoundingClientRect().top + window.scrollY);
       if (fantome) fantome.remove(); fantome = null; page = null; enCours = false;
       initPage(neuf);
       if (window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {}
@@ -161,7 +178,7 @@
   }
 
   function initPage(main) {
-    pastilles(main); fleche(main); liensAmazon(main); prechargerVoisins();
+    pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); prechargerVoisins();
   }
 
   function demarrer() {
