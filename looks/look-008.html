@@ -25,6 +25,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&family=Marcellus&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/look.js" defer></script>
 <script data-goatcounter="https://lateliermaison.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -35,7 +36,7 @@
 </div></header>
 <main class="wrap">
 <a class="retour" href="../index.html">Tous les looks</a>
-<article class="look">
+<article class="look" data-prec="look-011.html" data-suiv="look-007.html">
   <figure class="look-visuel">
     <div class="scene">
       <img src="../assets/img/looks/look008-balcon-cosy-automne.jpg" alt="Grand balcon d&#x27;automne à la tombée de la nuit avec deux fauteuils en corde tressée blanc cassé et coussins orange, plaid moutarde, table ronde au plateau marbre avec bougies orange, pouf tricoté crème, tapis beige à arcs, lanternes en verre fumé allumées, guirlande guinguette, grands pots blancs avec herbes de la pampa, plantes tombantes sur une étagère et coucher de soleil sur la ville" width="900" height="1350">
@@ -106,77 +107,10 @@
     </ol>
     <p class="lien-epingle"><a href="https://fr.pinterest.com/pin/1105985621023978780/" rel="noopener" target="_blank">Enregistrer ce look sur Pinterest</a></p>
     <nav class="nav-looks" aria-label="Autres looks"><a class="nav-prec" href="look-011.html" rel="prev">&#8249; Look n°11</a><a class="nav-suiv" href="look-007.html" rel="next">Look n°7 &#8250;</a></nav>
-    <link rel="prefetch" href="look-011.html"><link rel="prefetch" href="../assets/img/looks/look011-salle-a-manger-elegante.jpg"><link rel="prefetch" href="look-007.html"><link rel="prefetch" href="../assets/img/looks/look007-dressing-ouvert-lumineux.jpg">
     <p class="note-look">Image d'inspiration générée par IA. Les prix sont indicatifs et peuvent changer sur Amazon.</p>
   </div>
 </article>
-<button class="haut" type="button" aria-label="Revenir à l'image du look">&#8593;</button>
-<script>
-(function () {
-  var visuel = document.querySelector('.look-visuel'), haut = document.querySelector('.haut');
-  if ('IntersectionObserver' in window && visuel && haut) {
-    new IntersectionObserver(function (es) {
-      var hors = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
-      haut.classList.toggle('visible', hors);
-    }).observe(visuel);
-    haut.addEventListener('click', function () {
-      visuel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-    });
-  }
-})();
-(function () {
-  // Même ordre que l'accueil : glisser vers la gauche = look situé à droite (plus ancien), vers la droite = look situé à gauche (plus récent). La page suit le doigt.
-  var prec = "look-011.html", suiv = "look-007.html";
-  var main = document.querySelector('main'), x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth;
-  try {
-    var d = sessionStorage.getItem('glisse');
-    if (d) { sessionStorage.removeItem('glisse'); main.classList.add(d === 'g' ? 'arrivee-droite' : 'arrivee-gauche'); }
-  } catch (e) {}
-  function poser(v, t) { main.style.transition = t ? 'transform .24s ease, opacity .24s ease' : 'none'; main.style.transform = v ? 'translateX(' + v + 'px)' : ''; main.style.opacity = v ? String(1 - Math.min(Math.abs(v) / W, 1) * .45) : ''; }
-  document.addEventListener('touchstart', function (ev) {
-    if (ev.touches.length !== 1) { x0 = null; return; }
-    x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; dx = 0; mode = null; W = innerWidth;
-  }, { passive: true });
-  document.addEventListener('touchmove', function (ev) {
-    if (x0 === null) return;
-    var mx = ev.touches[0].clientX - x0, my = ev.touches[0].clientY - y0;
-    if (!mode) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; mode = Math.abs(mx) > Math.abs(my) * 1.2 ? 'h' : 'v'; }
-    if (mode !== 'h') return;
-    dx = mx;
-    poser((dx < 0 ? suiv : prec) ? dx : dx * .25, false);
-  }, { passive: true });
-  function fin() {
-    if (x0 === null) return; x0 = null;
-    if (mode !== 'h') return;
-    var cible = dx < 0 ? suiv : prec;
-    if (cible && Math.abs(dx) > W * .22) {
-      poser(dx < 0 ? -W : W, true);
-      try { sessionStorage.setItem('glisse', dx < 0 ? 'g' : 'd'); } catch (e) {}
-      setTimeout(function () { location.href = cible; }, 200);
-    } else poser(0, true);
-  }
-  document.addEventListener('touchend', fin);
-  document.addEventListener('touchcancel', fin);
-  addEventListener('pageshow', function (e) { if (e.persisted) poser(0, false); });
-})();
-document.querySelectorAll('.pastille').forEach(function (b) {
-  b.addEventListener('click', function () {
-    var n = b.dataset.n, li = document.getElementById('article-' + n);
-    document.querySelectorAll('.actif').forEach(function (x) { x.classList.remove('actif'); });
-    b.classList.add('actif'); li.classList.add('actif');
-    li.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-  });
-});
-document.querySelectorAll('.article').forEach(function (li) {
-  ['mouseenter', 'focusin'].forEach(function (ev) {
-    li.addEventListener(ev, function () {
-      var p = document.querySelector('.pastille[data-n="' + li.dataset.n + '"]');
-      document.querySelectorAll('.pastille.actif').forEach(function (x) { x.classList.remove('actif'); });
-      if (p) p.classList.add('actif');
-    });
-  });
-});
-</script>
+
 </main>
 <footer class="pied"><div class="wrap">
   <p> Les images des looks sont des inspirations générées par IA ; les articles listés permettent de recréer l'ambiance.</p>
