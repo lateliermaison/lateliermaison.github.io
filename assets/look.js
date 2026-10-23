@@ -27,13 +27,10 @@
       if (a.dataset.pret) return; a.dataset.pret = '1';
       a.removeAttribute('target');  // dans Safari, un lien amazon.fr ouvre l'appli Amazon si elle est installée
       if (!PINTEREST) return;
-      // Dans l'appli Pinterest, l'appli Amazon ne s'ouvre pas : on rouvre tout de suite cette page dans Safari, sur l'article,
-      // et là un seul toucher sur « Voir sur Amazon » ouvre l'appli Amazon (connectée).
-      var li = a.closest('.article');
+      // Dans l'appli Pinterest : ouvrir directement la fiche Amazon dans Safari (choix d'AIRKATE, 24/10/2026).
       a.addEventListener('click', function (ev) {
         ev.preventDefault();
-        var n = li ? li.dataset.n : '';
-        location.href = versSafari(location.origin + location.pathname + (n ? '?amazon=' + n + '#article-' + n : ''));
+        location.href = versSafari(a.href);
       });
     });
   }
