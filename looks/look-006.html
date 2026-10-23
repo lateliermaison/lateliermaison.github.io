@@ -120,8 +120,8 @@
 </li>
     </ol>
     <p class="lien-epingle"><a href="https://fr.pinterest.com/pin/1105985621023862696/" rel="noopener" target="_blank">Enregistrer ce look sur Pinterest</a></p>
-    <nav class="nav-looks" aria-label="Autres looks"><a class="nav-prec" href="look-002.html" rel="prev">&#8249; Look n°2</a><a class="nav-suiv" href="look-007.html" rel="next">Look n°7 &#8250;</a></nav>
-    <link rel="prefetch" href="look-002.html"><link rel="prefetch" href="../assets/img/looks/look002-salon-noel-beige-dore.jpg"><link rel="prefetch" href="look-007.html"><link rel="prefetch" href="../assets/img/looks/look007-dressing-ouvert-lumineux.jpg">
+    <nav class="nav-looks" aria-label="Autres looks"><a class="nav-prec" href="look-007.html" rel="prev">&#8249; Look n°7</a><a class="nav-suiv" href="look-002.html" rel="next">Look n°2 &#8250;</a></nav>
+    <link rel="prefetch" href="look-007.html"><link rel="prefetch" href="../assets/img/looks/look007-dressing-ouvert-lumineux.jpg"><link rel="prefetch" href="look-002.html"><link rel="prefetch" href="../assets/img/looks/look002-salon-noel-beige-dore.jpg">
     <p class="note-look">Image d'inspiration générée par IA. Les prix sont indicatifs et peuvent changer sur Amazon.</p>
   </div>
 </article>
@@ -140,8 +140,8 @@
   }
 })();
 (function () {
-  // Glisser vers la gauche = look suivant (numéro plus grand), vers la droite = look précédent. La page suit le doigt.
-  var prec = "look-002.html", suiv = "look-007.html";
+  // Même ordre que l'accueil : glisser vers la gauche = look situé à droite (plus ancien), vers la droite = look situé à gauche (plus récent). La page suit le doigt.
+  var prec = "look-007.html", suiv = "look-002.html";
   var main = document.querySelector('main'), x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth;
   try {
     var d = sessionStorage.getItem('glisse');
