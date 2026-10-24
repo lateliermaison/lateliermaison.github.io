@@ -84,6 +84,12 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .article-num { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--laiton); display: grid; place-items: center; font-weight: 600; font-size: .95rem; }
 .article h2 { font: 600 1.05rem/1.35 var(--texte); margin: 4px 0 2px; }
 .article p { margin: 0; color: var(--taupe); font-size: .95rem; }
+/* Aperçu de l'article : visible seulement pour le numéro touché */
+.apercu { grid-column: 2; margin: 10px 0 0; display: none; }
+.article.ouvert .apercu { display: block; animation: apercu-in .28s ease both; }
+.apercu img { display: block; height: 150px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; border-radius: 12px; background: var(--laiton-clair); }
+@keyframes apercu-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .article.ouvert .apercu { animation: none; } }
 .article-bas { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 10px; }
 .prix { font-weight: 600; }
 .bouton {
