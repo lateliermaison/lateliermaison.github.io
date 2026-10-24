@@ -80,6 +80,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 
 .articles { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--trait); }
 .article { display: grid; grid-template-columns: 40px 1fr; gap: 6px 14px; padding: 18px 8px; border-bottom: 1px solid var(--trait); border-radius: 10px; transition: background .25s ease; scroll-margin-top: 90px; }
+.article[data-n] { cursor: pointer; }
 .article.actif { background: var(--laiton-clair); }
 .article-num { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--laiton); display: grid; place-items: center; font-weight: 600; font-size: .95rem; }
 .article h2 { font: 600 1.05rem/1.35 var(--texte); margin: 4px 0 2px; }
