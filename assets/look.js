@@ -1,5 +1,5 @@
-/* L'Atelier Maison : comportement des pages (23/10/2026).
-   - pastilles <-> articles, flèche flottante « revenir à l'image » ;
+/* L'Atelier Maison : comportement des pages (24/10/2026).
+   - pastilles <-> articles (le numéro touché montre l'aperçu de son article, un seul à la fois), flèche flottante « revenir à l'image » ;
    - passage d'un look à l'autre au doigt, façon carrousel : le look voisin apparaît pendant qu'on glisse, sans rechargement ;
    - ouverture hors de l'appli Pinterest (Safari) et des liens Amazon dans l'appli Amazon. */
 (function () {
@@ -75,7 +75,8 @@
       b.addEventListener('click', function () {
         var li = main.querySelector('#article-' + b.dataset.n);
         main.querySelectorAll('.actif').forEach(function (x) { x.classList.remove('actif'); });
-        b.classList.add('actif'); if (!li) return; li.classList.add('actif');
+        main.querySelectorAll('.article.ouvert').forEach(function (x) { if (x !== li) x.classList.remove('ouvert'); });
+        b.classList.add('actif'); if (!li) return; li.classList.add('actif'); li.classList.add('ouvert');  // aperçu de cet article seulement
         li.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
       });
     });
