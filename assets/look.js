@@ -71,16 +71,31 @@
 
   /* ---------- Pastilles ---------- */
   function pastilles(main) {
+    // choisir un article : numéro sur l'image et ligne de la liste allumés, aperçu de cet article seulement
+    function choisir(n) {
+      var li = main.querySelector('#article-' + n), p = main.querySelector('.pastille[data-n="' + n + '"]');
+      main.querySelectorAll('.actif').forEach(function (x) { x.classList.remove('actif'); });
+      main.querySelectorAll('.article.ouvert').forEach(function (x) { if (x !== li) x.classList.remove('ouvert'); });
+      if (p) p.classList.add('actif');
+      if (li) { li.classList.add('actif'); li.classList.add('ouvert'); }
+      return li;
+    }
     main.querySelectorAll('.pastille').forEach(function (b) {
       b.addEventListener('click', function () {
-        var li = main.querySelector('#article-' + b.dataset.n);
-        main.querySelectorAll('.actif').forEach(function (x) { x.classList.remove('actif'); });
-        main.querySelectorAll('.article.ouvert').forEach(function (x) { if (x !== li) x.classList.remove('ouvert'); });
-        b.classList.add('actif'); if (!li) return; li.classList.add('actif'); li.classList.add('ouvert');  // aperçu de cet article seulement
-        li.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
+        var li = choisir(b.dataset.n);
+        if (li) li.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
       });
     });
     main.querySelectorAll('.article').forEach(function (li) {
+      // toucher ou cliquer un article dans la liste : il est choisi (sans faire défiler la page) ; le bouton Amazon garde son rôle
+      li.addEventListener('click', function (ev) {
+        if (ev.target.closest('a, button')) return;
+        var avant = li.getBoundingClientRect().top;
+        choisir(li.dataset.n);
+        // si l'aperçu qui se ferme était au-dessus, la page ne saute pas : l'article reste sous le doigt
+        var ecart = li.getBoundingClientRect().top - avant;
+        if (Math.abs(ecart) > 1) window.scrollBy(0, ecart);
+      });
       ['mouseenter', 'focusin'].forEach(function (ev) {
         li.addEventListener(ev, function () {
           var p = main.querySelector('.pastille[data-n="' + li.dataset.n + '"]');
