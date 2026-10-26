@@ -1,7 +1,8 @@
 /* L'Atelier Maison : comportement des pages (24/10/2026).
    - pastilles <-> articles (le numéro touché montre l'aperçu de son article, un seul à la fois), flèche flottante « revenir à l'image » ;
    - passage d'un look à l'autre au doigt, façon carrousel : le look voisin apparaît pendant qu'on glisse, sans rechargement ;
-   - ouverture hors de l'appli Pinterest (Safari) et des liens Amazon dans l'appli Amazon. */
+   - ouverture hors de l'appli Pinterest (Safari) et des liens Amazon dans l'appli Amazon ;
+   - clics sur « Voir sur Amazon » comptés dans GoatCounter (événements, 26/10/2026). */
 (function () {
   var UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && 'ontouchend' in document);
   var PINTEREST = /Pinterest/i.test(UA), ANDROID = /Android/i.test(UA);
@@ -38,6 +39,25 @@
       });
     });
   }
+
+  /* ---------- Clics vers Amazon comptés dans GoatCounter (anonyme, sans cookie ; 26/10/2026) ----------
+     Chaque bouton « Voir sur Amazon » porte data-gc="amazon/look-015/03" : GoatCounter l'affiche comme un événement.
+     Respecte #toggle-goatcounter (nos propres clics ne sont pas comptés). */
+  function compterClic(a) {
+    var gc = window.goatcounter;
+    if (!gc || !a.dataset.gc) return;
+    try {
+      if (gc.filter && gc.filter()) return;  // suivi désactivé dans ce navigateur, robot, aperçu local…
+      var v = { path: a.dataset.gc, title: a.dataset.gcTitre || a.textContent, event: true };
+      var u = gc.url && gc.url(v);
+      if (u && navigator.sendBeacon) navigator.sendBeacon(u);  // part même si la page change tout de suite
+      else if (gc.count) gc.count(v);
+    } catch (e) {}
+  }
+  document.addEventListener('click', function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest('a[data-gc]');
+    if (a) compterClic(a);
+  }, true);
 
   function arriveeAmazon(main) {
     var m = /[?&]amazon=(\d+)/.exec(location.search);
