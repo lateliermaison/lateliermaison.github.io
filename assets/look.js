@@ -2,12 +2,45 @@
    - pastilles <-> articles (le numéro touché montre l'aperçu de son article, un seul à la fois), flèche flottante « revenir à l'image » ;
    - passage d'un look à l'autre au doigt, façon carrousel : le look voisin apparaît pendant qu'on glisse, sans rechargement ;
    - ouverture hors de l'appli Pinterest (Safari) et des liens Amazon dans l'appli Amazon ;
-   - clics sur « Voir sur Amazon » comptés dans GoatCounter (événements, 26/10/2026). */
+   - clics sur « Voir sur Amazon » comptés dans GoatCounter (événements, 26/10/2026) ;
+   - nos appareils exclus des statistiques par …/#ne-pas-compter, sans bascule (27/10/2026). */
 (function () {
   var UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && 'ontouchend' in document);
   var PINTEREST = /Pinterest/i.test(UA), ANDROID = /Android/i.test(UA);
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var cache = {};
+
+  /* ---------- Nos propres appareils : exclus des statistiques (27/10/2026) ----------
+     Le réglage de GoatCounter « #toggle-goatcounter » BASCULE à chaque chargement : si Safari recharge l'onglet
+     (souvent sur iPhone au retour de l'appli Amazon) ou si on rouvre l'adresse, le comptage se rallume.
+     Ici, une adresse qui ne bascule pas : …/#ne-pas-compter exclut l'appareil (même clé « skipgc » que GoatCounter,
+     donc pages vues ET clics) ; …/#compter le réactive. Le # est retiré de l'adresse aussitôt : recharger ne change rien.
+     Sur un appareil exclu, une petite ligne en bas de page le confirme (invisible pour les visiteurs). */
+  function exclu() { try { return localStorage.getItem('skipgc') === 't'; } catch (e) { return false; } }
+  function reglageComptage() {
+    var h = location.hash;
+    try {
+      if (h === '#ne-pas-compter' || h === '#toggle-goatcounter') localStorage.setItem('skipgc', 't');
+      else if (h === '#compter') localStorage.removeItem('skipgc');
+      else return false;
+      history.replaceState(history.state, '', location.pathname + location.search);
+    } catch (e) {}
+    return true;
+  }
+  reglageComptage();
+  function temoinExclu() {
+    var pied = document.querySelector('.pied .wrap');
+    if (!pied) return;
+    var t = pied.querySelector('.temoin-exclu');
+    if (!exclu()) { if (t) t.remove(); return; }
+    if (t) return;
+    var p = document.createElement('p');
+    p.className = 'temoin-exclu';
+    p.textContent = 'Cet appareil n\u2019est pas compté dans les statistiques.';
+    pied.appendChild(p);
+  }
+  // adresse modifiée sans rechargement (on ajoute #ne-pas-compter à la page déjà ouverte)
+  addEventListener('hashchange', function () { if (reglageComptage()) temoinExclu(); });
 
   /* ---------- Sortir de l'appli Pinterest ---------- */
   // Ouvrir une adresse hors de l'appli Pinterest : iPhone/iPad -> navigateur du téléphone (Safari), Android -> navigateur par défaut.
@@ -42,10 +75,10 @@
 
   /* ---------- Clics vers Amazon comptés dans GoatCounter (anonyme, sans cookie ; 26/10/2026) ----------
      Chaque bouton « Voir sur Amazon » porte data-gc="amazon/look-015/03" : GoatCounter l'affiche comme un événement.
-     Respecte #toggle-goatcounter (nos propres clics ne sont pas comptés). */
+     Nos appareils (#ne-pas-compter) ne sont jamais comptés. */
   function compterClic(a) {
     var gc = window.goatcounter;
-    if (!gc || !a.dataset.gc) return;
+    if (!gc || !a.dataset.gc || exclu()) return;  // nos appareils (#ne-pas-compter) : jamais comptés
     try {
       if (gc.filter && gc.filter()) return;  // suivi désactivé dans ce navigateur, robot, aperçu local…
       var v = { path: a.dataset.gc, title: a.dataset.gcTitre || a.textContent, event: true };
@@ -207,7 +240,7 @@
       else window.scrollTo(0, nl.getBoundingClientRect().top + window.scrollY);
       if (fantome) fantome.remove(); fantome = null; page = null; enCours = false;
       initPage(neuf);
-      if (window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {}
+      if (!exclu() && window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {}
     }
     document.addEventListener('touchend', fin);
     document.addEventListener('touchcancel', fin);
@@ -219,7 +252,7 @@
   }
 
   function demarrer() {
-    bandeauPinterest();
+    bandeauPinterest(); temoinExclu();
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
     carrousel();

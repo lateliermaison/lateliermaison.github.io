@@ -113,6 +113,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .pied a { color: var(--taupe); }
 
 .pied-liens { display: flex; gap: 20px; }
+.temoin-exclu { flex-basis: 100%; font-size: .78rem; opacity: .8; }
 
 /* Formulaire de contact */
 .formulaire { display: grid; gap: 6px; max-width: 520px; margin-top: 20px; }
