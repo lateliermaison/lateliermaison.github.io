@@ -102,7 +102,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .bouton.inactif { background: transparent; color: var(--taupe); border: 1px dashed var(--trait); }
 .etiquette-proche { font-size: .82rem; color: var(--taupe); font-style: italic; }
 
-.prix-releve { margin: 4px 0 14px; font-size: .86rem; color: var(--taupe); }
+.prix-releve { margin: 2px 0 12px; font-size: .8rem; letter-spacing: .02em; color: var(--taupe); opacity: .85; }
 .note-look { margin-top: 22px; font-size: .88rem; color: var(--taupe); max-width: 52ch; }
 .bandeau-brouillon { background: var(--laiton); color: var(--craie); text-align: center; padding: 8px 16px; font-size: .9rem; }
 
