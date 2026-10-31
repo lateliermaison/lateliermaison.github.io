@@ -251,8 +251,102 @@
     pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); prechargerVoisins();
   }
 
+
+  /* Accueil : filtres par pièce et tri (31/10/2026). Adresse : index.html?piece=salon&tri=anciens */
+  var appliquerFiltre = null;
+  function filtres() {
+    var grille = document.getElementById('grille');
+    if (!grille) return;
+    var cartes = Array.prototype.slice.call(grille.querySelectorAll('.carte'));
+    var liens = Array.prototype.slice.call(document.querySelectorAll('.filtre'));
+    var tri = document.getElementById('tri');
+    var compte = document.getElementById('compte');
+    function appliquer(cat, ordre, garderAdresse) {
+      cat = cat || 'tous'; ordre = ordre || (tri ? tri.value : 'recents');
+      if (tri) tri.value = ordre;
+      cartes.sort(function (a, b) {
+        var x = (a.dataset.date || '') + String(1000 + +a.dataset.num), y = (b.dataset.date || '') + String(1000 + +b.dataset.num);
+        return ordre === 'anciens' ? (x < y ? -1 : 1) : (x < y ? 1 : -1);
+      });
+      var n = 0;
+      cartes.forEach(function (c) {
+        var ok = cat === 'tous' || (' ' + c.dataset.cats + ' ').indexOf(' ' + cat + ' ') >= 0;
+        c.hidden = !ok; if (ok) n++;
+        grille.appendChild(c);
+      });
+      liens.forEach(function (a) {
+        if (a.dataset.cat === cat) { a.setAttribute('aria-current', 'true'); if (a.scrollIntoView && a.parentNode.scrollWidth > a.parentNode.clientWidth) a.parentNode.scrollLeft = a.offsetLeft - 16; }
+        else a.removeAttribute('aria-current');
+      });
+      document.querySelectorAll('.menu-liste a').forEach(function (a) { if (a.dataset.cat === cat) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+      if (compte) compte.textContent = n + (n > 1 ? ' looks' : ' look');
+      if (!garderAdresse && history.replaceState) {
+        var q = [];
+        if (cat !== 'tous') q.push('piece=' + cat);
+        if (ordre !== 'recents') q.push('tri=' + ordre);
+        history.replaceState(history.state, '', location.pathname + (q.length ? '?' + q.join('&') : ''));
+      }
+    }
+    appliquerFiltre = appliquer;
+    var p = new URLSearchParams(location.search);
+    var depart = p.get('piece') || 'tous';
+    if (!liens.some(function (a) { return a.dataset.cat === depart; })) depart = 'tous';
+    appliquer(depart, p.get('tri') === 'anciens' ? 'anciens' : 'recents', true);
+    liens.forEach(function (a) {
+      a.addEventListener('click', function (ev) { ev.preventDefault(); appliquer(a.dataset.cat); });
+    });
+    if (tri) tri.addEventListener('change', function () {
+      var actif = document.querySelector('.filtre[aria-current]');
+      appliquer(actif ? actif.dataset.cat : 'tous', tri.value);
+    });
+  }
+
+  /* Bouton Menu : panneau des catégories (31/10/2026) */
+  function menuSite() {
+    var bouton = document.querySelector('.menu-bouton'), m = document.getElementById('menu');
+    if (!bouton || !m) return;
+    var panneau = m.querySelector('.menu-panneau'), avant = null;
+    function ouvrir() {
+      avant = document.activeElement;
+      m.hidden = false;
+      void m.offsetWidth;
+      m.classList.add('ouvert');
+      bouton.setAttribute('aria-expanded', 'true');
+      document.documentElement.classList.add('menu-actif');
+      var f = m.querySelector('.menu-fermer'); if (f) f.focus();
+    }
+    function fermer(rendreFocus) {
+      if (m.hidden) return;
+      m.classList.remove('ouvert');
+      bouton.setAttribute('aria-expanded', 'false');
+      document.documentElement.classList.remove('menu-actif');
+      setTimeout(function () { if (!m.classList.contains('ouvert')) m.hidden = true; }, RM ? 0 : 320);
+      if (rendreFocus !== false && avant && avant.focus) avant.focus();
+    }
+    bouton.addEventListener('click', ouvrir);
+    m.addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-fermer]')) { fermer(); return; }
+      var a = ev.target.closest('.menu-liste a');
+      if (a && appliquerFiltre) {
+        ev.preventDefault(); fermer(false); appliquerFiltre(a.dataset.cat);
+        var g = document.querySelector('.filtres'); if (g) g.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+      }
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (m.hidden) return;
+      if (ev.key === 'Escape') { fermer(); return; }
+      if (ev.key === 'Tab') {
+        var f = panneau.querySelectorAll('a, button');
+        if (!f.length) return;
+        var premier = f[0], dernier = f[f.length - 1];
+        if (ev.shiftKey && document.activeElement === premier) { ev.preventDefault(); dernier.focus(); }
+        else if (!ev.shiftKey && document.activeElement === dernier) { ev.preventDefault(); premier.focus(); }
+      }
+    });
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite();
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
     carrousel();
