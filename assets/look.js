@@ -247,8 +247,37 @@
     addEventListener('popstate', function () { location.reload(); });
   }
 
+  /* Passer d'un look à l'autre dans la pièce choisie (31/10/2026).
+     Venu de l'accueil filtré sur « Noël », l'adresse garde ?piece=noel : les flèches et le glissement
+     restent dans les looks de Noël, dans l'ordre de l'accueil. Sans pièce : tous les looks. */
+  function pieceChoisie() { try { return new URLSearchParams(location.search).get('piece') || ''; } catch (e) { return ''; } }
+  function adapterNavigation(main) {
+    var look = main.querySelector('.look'), src = main.querySelector('#looks-ordre');
+    if (!look || !src) return;
+    var d; try { d = JSON.parse(src.textContent); } catch (e) { return; }
+    var cat = pieceChoisie();
+    if (!cat || !d.noms || !d.noms[cat]) return;
+    var liste = d.looks.filter(function (l) { return l.cats.indexOf(cat) >= 0; });
+    var id = location.pathname.split('/').pop().replace(/\.html$/, '');
+    var i = -1; liste.forEach(function (l, k) { if (l.id === id) i = k; });
+    if (i < 0) return;
+    var q = '?piece=' + encodeURIComponent(cat), prec = liste[i - 1], suiv = liste[i + 1];
+    look.dataset.prec = prec ? prec.id + '.html' + q : '';
+    look.dataset.suiv = suiv ? suiv.id + '.html' + q : '';
+    var nav = main.querySelector('.nav-looks');
+    if (nav) nav.classList.add('avec-piece');
+    if (!nav) { nav = document.createElement('nav'); nav.classList.add('avec-piece'); nav.className = 'nav-looks'; nav.setAttribute('aria-label', 'Autres looks'); var ap = main.querySelector('.note-look'); ap.parentNode.insertBefore(nav, ap); }
+    nav.innerHTML = (prec ? '<a class="nav-prec" href="' + prec.id + '.html' + q + '" rel="prev">&#8249; Look n°' + prec.numero + '</a>' : '<span></span>')
+      + '<span class="nav-piece">' + d.noms[cat] + ', ' + (i + 1) + ' sur ' + liste.length + '</span>'
+      + (suiv ? '<a class="nav-suiv" href="' + suiv.id + '.html' + q + '" rel="next">Look n°' + suiv.numero + ' &#8250;</a>' : '<span></span>');
+    var r = main.querySelector('.retour');
+    if (r) { r.href = '../index.html' + q; r.textContent = 'Tous les looks ' + d.noms[cat]; }
+    var astuce = main.querySelector('.astuce-glisser');
+    if (astuce && !prec && !suiv) astuce.remove();
+  }
+
   function initPage(main) {
-    pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); prechargerVoisins();
+    adapterNavigation(main); pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); prechargerVoisins();
   }
 
 
@@ -261,6 +290,58 @@
     var liens = Array.prototype.slice.call(document.querySelectorAll('.filtre'));
     var tri = document.getElementById('tri');
     var compte = document.getElementById('compte');
+    var barre = document.querySelector('.filtres'), minuteur = null, DUREE = 550, COURBE = 'cubic-bezier(.33,1,.68,1)';
+    // défilement doux, à la même vitesse et avec la même courbe que la grille : la page ne « saute » jamais
+    function defiler(cible) {
+      var y0 = window.scrollY, d = cible - y0, t0 = null;
+      function pas(t) {
+        if (t0 === null) t0 = t;
+        var k = Math.min(1, (t - t0) / DUREE), e = 1 - Math.pow(1 - k, 3);
+        window.scrollTo(0, y0 + d * e);
+        if (k < 1) requestAnimationFrame(pas);
+      }
+      requestAnimationFrame(pas);
+    }
+    function nettoyer() {
+      clearTimeout(minuteur);
+      grille.style.height = ''; grille.style.transition = '';
+      cartes.forEach(function (c) { c.style.transition = ''; c.style.transform = ''; c.style.opacity = ''; });
+    }
+    /* Change de pièce sans saut : les cartes qui restent glissent à leur nouvelle place, les nouvelles apparaissent
+       en fondu, la hauteur de la grille suit en douceur et la page remonte doucement au début de la liste. */
+    function changer(cat, ordre, montrer) {
+      if (RM || !window.Map) { appliquer(cat, ordre); if (montrer && barre) grille.scrollIntoView(); return; }
+      nettoyer();
+      var avant = new Map();
+      cartes.forEach(function (c) { if (!c.hidden) avant.set(c, c.getBoundingClientRect()); });
+      var hAvant = grille.offsetHeight;
+      appliquer(cat, ordre);
+      var hApres = grille.offsetHeight;
+      var visibles = cartes.filter(function (c) { return !c.hidden; });
+      visibles.forEach(function (c, k) {
+        var a = avant.get(c), b = c.getBoundingClientRect();
+        c.style.transition = 'none';
+        if (a) c.style.transform = 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px)';
+        else { c.style.opacity = '0'; c.style.transform = 'translateY(18px)'; }
+      });
+      grille.style.height = hAvant + 'px';
+      void grille.offsetHeight;
+      var nouvelles = 0;
+      visibles.forEach(function (c) {
+        var retard = avant.has(c) ? 0 : 60 + Math.min(nouvelles++, 5) * 45;
+        c.style.transition = 'transform ' + DUREE + 'ms ' + COURBE + ' ' + retard + 'ms, opacity .4s ease ' + retard + 'ms';
+        c.style.transform = ''; c.style.opacity = '';
+      });
+      grille.style.transition = 'height ' + DUREE + 'ms ' + COURBE;
+      grille.style.height = hApres + 'px';
+      minuteur = setTimeout(nettoyer, DUREE + 400);
+      // si on était descendu dans la liste, on remonte doucement à son début (juste sous la barre des pièces)
+      if (barre) {
+        var haut = document.querySelector('.filtres-infos') || grille;
+        var cible = haut.getBoundingClientRect().top + window.scrollY - barre.offsetHeight - 8;
+        if (window.scrollY > cible + 4 || (montrer && Math.abs(window.scrollY - cible) > 4)) defiler(cible);
+      }
+    }
     function appliquer(cat, ordre, garderAdresse) {
       cat = cat || 'tous'; ordre = ordre || (tri ? tri.value : 'recents');
       if (tri) tri.value = ordre;
@@ -272,10 +353,18 @@
       cartes.forEach(function (c) {
         var ok = cat === 'tous' || (' ' + c.dataset.cats + ' ').indexOf(' ' + cat + ' ') >= 0;
         c.hidden = !ok; if (ok) n++;
+        if (c.dataset.href) c.setAttribute('href', c.dataset.href + (cat === 'tous' ? '' : '?piece=' + cat));
         grille.appendChild(c);
       });
       liens.forEach(function (a) {
-        if (a.dataset.cat === cat) { a.setAttribute('aria-current', 'true'); if (a.scrollIntoView && a.parentNode.scrollWidth > a.parentNode.clientWidth) a.parentNode.scrollLeft = a.offsetLeft - 16; }
+        if (a.dataset.cat === cat) {
+          a.setAttribute('aria-current', 'true');
+          var l = a.parentNode;
+          if (l.scrollWidth > l.clientWidth) {
+            var x = a.offsetLeft - (l.clientWidth - a.offsetWidth) / 2;  // la pièce choisie se place au milieu de la barre
+            if (l.scrollTo) l.scrollTo({ left: x, behavior: garderAdresse || RM ? 'auto' : 'smooth' }); else l.scrollLeft = x;
+          }
+        }
         else a.removeAttribute('aria-current');
       });
       document.querySelectorAll('.menu-liste a').forEach(function (a) { if (a.dataset.cat === cat) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
@@ -287,17 +376,17 @@
         history.replaceState(history.state, '', location.pathname + (q.length ? '?' + q.join('&') : ''));
       }
     }
-    appliquerFiltre = appliquer;
+    appliquerFiltre = changer;
     var p = new URLSearchParams(location.search);
     var depart = p.get('piece') || 'tous';
     if (!liens.some(function (a) { return a.dataset.cat === depart; })) depart = 'tous';
     appliquer(depart, p.get('tri') === 'anciens' ? 'anciens' : 'recents', true);
     liens.forEach(function (a) {
-      a.addEventListener('click', function (ev) { ev.preventDefault(); appliquer(a.dataset.cat); });
+      a.addEventListener('click', function (ev) { ev.preventDefault(); if (a.getAttribute('aria-current')) return; changer(a.dataset.cat); });
     });
     if (tri) tri.addEventListener('change', function () {
       var actif = document.querySelector('.filtre[aria-current]');
-      appliquer(actif ? actif.dataset.cat : 'tous', tri.value);
+      changer(actif ? actif.dataset.cat : 'tous', tri.value);
     });
   }
 
@@ -328,8 +417,7 @@
       if (ev.target.closest('[data-fermer]')) { fermer(); return; }
       var a = ev.target.closest('.menu-liste a');
       if (a && appliquerFiltre) {
-        ev.preventDefault(); fermer(false); appliquerFiltre(a.dataset.cat);
-        var g = document.querySelector('.filtres'); if (g) g.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+        ev.preventDefault(); fermer(false); appliquerFiltre(a.dataset.cat, null, true);
       }
     });
     document.addEventListener('keydown', function (ev) {
