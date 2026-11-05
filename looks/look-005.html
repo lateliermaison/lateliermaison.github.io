@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-racine="../">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,6 +34,7 @@
   <a class="marque" href="../index.html"><img src="../assets/img/logo-entete.svg" alt="L&#x27;Atelier Maison" width="643" height="100"></a>
   <div class="entete-droite">
     <a class="lien-pinterest" href="https://fr.pinterest.com/lateliermaison_deco/" rel="noopener" target="_blank">Suivre sur Pinterest</a>
+    <button class="recherche-bouton" type="button" aria-controls="recherche-panneau" aria-expanded="false" aria-label="Rechercher un look"><svg class="loupe" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.4 15.4 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Rechercher</span></button>
     <button class="menu-bouton" type="button" aria-controls="menu" aria-expanded="false"><span class="menu-icone" aria-hidden="true"><i></i><i></i><i></i></span>Menu</button>
   </div>
 </div></header>
@@ -45,10 +46,10 @@
       <button class="menu-fermer" type="button" data-fermer aria-label="Fermer le menu"><span aria-hidden="true"></span></button>
     </div>
     <ul class="menu-liste">
-<li><a href="../index.html" data-cat="tous"><span class="menu-vignette"><img src="../assets/img/looks/look010-coin-lecture-verre-vert.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Tous les looks</span><span class="menu-nb">12 looks</span></a></li>
+<li><a href="../index.html" data-cat="tous"><span class="menu-vignette"><img src="../assets/img/looks/look016-salle-a-manger-taupe-doree.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Tous les looks</span><span class="menu-nb">13 looks</span></a></li>
 <li><a href="../index.html?piece=noel" data-cat="noel"><span class="menu-vignette"><img src="../assets/img/looks/look005-table-noel-rouge-vert-doree.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Noël</span><span class="menu-nb">3 looks</span></a></li>
 <li><a href="../index.html?piece=salon" data-cat="salon"><span class="menu-vignette"><img src="../assets/img/looks/look010-coin-lecture-verre-vert.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Salon</span><span class="menu-nb">4 looks</span></a></li>
-<li><a href="../index.html?piece=salle-a-manger" data-cat="salle-a-manger"><span class="menu-vignette"><img src="../assets/img/looks/look005-table-noel-rouge-vert-doree.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Salle à manger</span><span class="menu-nb">2 looks</span></a></li>
+<li><a href="../index.html?piece=salle-a-manger" data-cat="salle-a-manger"><span class="menu-vignette"><img src="../assets/img/looks/look016-salle-a-manger-taupe-doree.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Salle à manger</span><span class="menu-nb">3 looks</span></a></li>
 <li><a href="../index.html?piece=chambre" data-cat="chambre"><span class="menu-vignette"><img src="../assets/img/looks/look006-chambre-cosy-violette.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Chambre</span><span class="menu-nb">1 look</span></a></li>
 <li><a href="../index.html?piece=salle-de-bain" data-cat="salle-de-bain"><span class="menu-vignette"><img src="../assets/img/looks/look012-salle-de-bain-noir-blanc.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Salle de bain</span><span class="menu-nb">1 look</span></a></li>
 <li><a href="../index.html?piece=entree" data-cat="entree"><span class="menu-vignette"><img src="../assets/img/looks/look014-entree-noel-lumineuse.jpg" alt="" width="60" height="90" loading="lazy"></span><span class="menu-nom">Entrée</span><span class="menu-nb">1 look</span></a></li>
@@ -61,6 +62,24 @@
       <li><a href="../contact.html">Contact</a></li>
       <li><a href="https://fr.pinterest.com/lateliermaison_deco/" rel="noopener" target="_blank">Suivre sur Pinterest</a></li>
     </ul>
+  </div>
+</div>
+<div class="recherche-panneau" id="recherche-panneau" hidden>
+  <div class="recherche-fond" data-fermer-recherche></div>
+  <div class="recherche-feuille" role="dialog" aria-modal="true" aria-label="Rechercher un look">
+    <div class="wrap recherche-feuille-haut">
+      <div class="recherche" data-recherche>
+  <div class="recherche-champ">
+    <svg class="loupe" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.4 15.4 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    <input id="q-panneau" type="search" name="q" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="r-panneau"
+      placeholder="Une pièce, une couleur, un article…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Rechercher un look">
+    <button class="recherche-effacer" type="button" aria-label="Effacer la recherche" hidden></button>
+    <kbd class="recherche-raccourci" aria-hidden="true" hidden></kbd>
+  </div>
+  <div class="recherche-resultats" id="r-panneau" role="listbox" aria-label="Suggestions" hidden></div>
+</div>
+      <button class="recherche-fermer" type="button" data-fermer-recherche>Fermer</button>
+    </div>
   </div>
 </div>
 <main class="wrap">
@@ -190,7 +209,7 @@
     </ol>
     <p class="lien-epingle"><a href="https://fr.pinterest.com/pin/1105985621024804820/" rel="noopener" target="_blank">Enregistrer ce look sur Pinterest</a></p>
     <nav class="nav-looks" aria-label="Autres looks"><a class="nav-prec" href="look-010.html" rel="prev">&#8249; Look n°10</a><a class="nav-suiv" href="look-012.html" rel="next">Look n°12 &#8250;</a></nav>
-    <script type="application/json" id="looks-ordre">{"noms":{"noel":"Noël","salon":"Salon","salle-a-manger":"Salle à manger","chambre":"Chambre","salle-de-bain":"Salle de bain","entree":"Entrée","dressing":"Dressing et rangement","petit-espace":"Petits espaces","balcon":"Balcon et terrasse","cuisine":"Cuisine","bureau":"Bureau"},"looks":[{"id":"look-010","numero":10,"cats":["petit-espace","salon"]},{"id":"look-005","numero":5,"cats":["noel","salle-a-manger"]},{"id":"look-012","numero":12,"cats":["salle-de-bain"]},{"id":"look-009","numero":9,"cats":["salon"]},{"id":"look-015","numero":15,"cats":["petit-espace"]},{"id":"look-014","numero":14,"cats":["noel","entree"]},{"id":"look-011","numero":11,"cats":["salle-a-manger"]},{"id":"look-008","numero":8,"cats":["balcon"]},{"id":"look-007","numero":7,"cats":["dressing"]},{"id":"look-006","numero":6,"cats":["chambre"]},{"id":"look-002","numero":2,"cats":["noel","salon"]},{"id":"look-001","numero":1,"cats":["salon"]}]}</script>
+    <script type="application/json" id="looks-ordre">{"noms":{"noel":"Noël","salon":"Salon","salle-a-manger":"Salle à manger","chambre":"Chambre","salle-de-bain":"Salle de bain","entree":"Entrée","dressing":"Dressing et rangement","petit-espace":"Petits espaces","balcon":"Balcon et terrasse","cuisine":"Cuisine","bureau":"Bureau"},"looks":[{"id":"look-016","numero":16,"cats":["salle-a-manger"]},{"id":"look-010","numero":10,"cats":["petit-espace","salon"]},{"id":"look-005","numero":5,"cats":["noel","salle-a-manger"]},{"id":"look-012","numero":12,"cats":["salle-de-bain"]},{"id":"look-009","numero":9,"cats":["salon"]},{"id":"look-015","numero":15,"cats":["petit-espace"]},{"id":"look-014","numero":14,"cats":["noel","entree"]},{"id":"look-011","numero":11,"cats":["salle-a-manger"]},{"id":"look-008","numero":8,"cats":["balcon"]},{"id":"look-007","numero":7,"cats":["dressing"]},{"id":"look-006","numero":6,"cats":["chambre"]},{"id":"look-002","numero":2,"cats":["noel","salon"]},{"id":"look-001","numero":1,"cats":["salon"]}]}</script>
     <p class="note-look">Image d'inspiration générée par IA. Prix indicatifs, revérifiés toutes les deux semaines.</p>
   </div>
 </article>

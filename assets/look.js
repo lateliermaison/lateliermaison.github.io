@@ -276,13 +276,45 @@
     if (astuce && !prec && !suiv) astuce.remove();
   }
 
+  // arrivée depuis la recherche sur un article : …/look-010.html#article-3 -> l'article est choisi et montré
+  function arriveeArticle(main) {
+    var m = /^#article-(\d+)$/.exec(location.hash);
+    if (!m) return;
+    var p = main.querySelector('.pastille[data-n="' + m[1] + '"]'), li = main.querySelector('#article-' + m[1]);
+    if (p) setTimeout(function () { p.click(); }, 80);
+    else if (li) setTimeout(function () { li.click(); li.scrollIntoView({ block: 'center' }); }, 80);
+  }
+
   function initPage(main) {
-    adapterNavigation(main); pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); prechargerVoisins();
+    adapterNavigation(main); pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
   }
 
 
   /* Accueil : filtres par pièce et tri (31/10/2026). Adresse : index.html?piece=salon&tri=anciens */
-  var appliquerFiltre = null;
+  var appliquerFiltre = null, filtrerRecherche = null;
+
+  /* Barre des pièces sur une seule ligne (05/11/2026) : fondu sur les bords et flèches (ordinateur) quand ça déborde ;
+     la loupe de la barre apparaît quand le champ de recherche du haut n'est plus visible. */
+  function rail() {
+    var r = document.querySelector('.filtres-rail'); if (!r) return;
+    var l = r.querySelector('.filtres-liste'), g = r.querySelector('.filtres-fleche.gauche'), d = r.querySelector('.filtres-fleche.droite');
+    function maj() {
+      var max = l.scrollWidth - l.clientWidth, x = l.scrollLeft;
+      var bg = max > 2 && x > 2, bd = max > 2 && x < max - 2;
+      r.classList.toggle('deborde-g', bg); r.classList.toggle('deborde-d', bd);
+      if (g) g.hidden = !bg; if (d) d.hidden = !bd;
+    }
+    function pousser(s) { l.scrollBy({ left: s * Math.max(160, l.clientWidth * .6), behavior: RM ? 'auto' : 'smooth' }); }
+    if (g) g.addEventListener('click', function () { pousser(-1); });
+    if (d) d.addEventListener('click', function () { pousser(1); });
+    l.addEventListener('scroll', maj, { passive: true }); addEventListener('resize', maj); maj();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(maj);
+    var barre = document.querySelector('.filtres'), champ = document.querySelector('.accueil-recherche'), loupe = document.querySelector('.filtres-loupe');
+    if (barre && champ && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { var v = !es[0].isIntersecting; barre.classList.toggle('colle', v); if (loupe) loupe.tabIndex = v ? 0 : -1; }).observe(champ);
+    }
+    if (loupe) loupe.addEventListener('click', function () { ouvrirRecherche(); });
+  }
   function filtres() {
     var grille = document.getElementById('grille');
     if (!grille) return;
@@ -342,8 +374,10 @@
         if (window.scrollY > cible + 4 || (montrer && Math.abs(window.scrollY - cible) > 4)) defiler(cible);
       }
     }
+    var annuler = document.querySelector('.recherche-annuler'), rechercheIds = null, rechercheTexte = '';
     function appliquer(cat, ordre, garderAdresse) {
       cat = cat || 'tous'; ordre = ordre || (tri ? tri.value : 'recents');
+      if (cat !== 'recherche') { rechercheIds = null; rechercheTexte = ''; }
       if (tri) tri.value = ordre;
       cartes.sort(function (a, b) {
         var x = (a.dataset.date || '') + String(1000 + +a.dataset.num), y = (b.dataset.date || '') + String(1000 + +b.dataset.num);
@@ -351,9 +385,10 @@
       });
       var n = 0;
       cartes.forEach(function (c) {
-        var ok = cat === 'tous' || (' ' + c.dataset.cats + ' ').indexOf(' ' + cat + ' ') >= 0;
+        var ok = cat === 'recherche' ? rechercheIds.indexOf(c.dataset.id) >= 0
+          : cat === 'tous' || (' ' + c.dataset.cats + ' ').indexOf(' ' + cat + ' ') >= 0;
         c.hidden = !ok; if (ok) n++;
-        if (c.dataset.href) c.setAttribute('href', c.dataset.href + (cat === 'tous' ? '' : '?piece=' + cat));
+        if (c.dataset.href) c.setAttribute('href', c.dataset.href + (cat === 'tous' || cat === 'recherche' ? '' : '?piece=' + cat));
         grille.appendChild(c);
       });
       liens.forEach(function (a) {
@@ -368,19 +403,28 @@
         else a.removeAttribute('aria-current');
       });
       document.querySelectorAll('.menu-liste a').forEach(function (a) { if (a.dataset.cat === cat) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
-      if (compte) compte.textContent = n + (n > 1 ? ' looks' : ' look');
+      if (compte) compte.textContent = n + (n > 1 ? ' looks' : ' look') + (cat === 'recherche' ? ' pour \u00ab\u00a0' + rechercheTexte + '\u00a0\u00bb' : '');
+      if (annuler) annuler.hidden = cat !== 'recherche';
       if (!garderAdresse && history.replaceState) {
         var q = [];
-        if (cat !== 'tous') q.push('piece=' + cat);
+        if (cat === 'recherche') q.push('q=' + encodeURIComponent(rechercheTexte));
+        else if (cat !== 'tous') q.push('piece=' + cat);
         if (ordre !== 'recents') q.push('tri=' + ordre);
         history.replaceState(history.state, '', location.pathname + (q.length ? '?' + q.join('&') : ''));
       }
     }
     appliquerFiltre = changer;
+    // résultat d'une recherche affiché dans la grille (« Voir les 3 looks pour « rose » »)
+    filtrerRecherche = function (ids, texte, garderAdresse) {
+      rechercheIds = ids; rechercheTexte = texte;
+      if (garderAdresse) appliquer('recherche', null, true); else changer('recherche', null, true);
+    };
+    if (annuler) annuler.addEventListener('click', function () { changer('tous'); var c = document.querySelector('.accueil-recherche input'); if (c) { c.value = ''; c.dispatchEvent(new Event('input')); } });
     var p = new URLSearchParams(location.search);
     var depart = p.get('piece') || 'tous';
     if (!liens.some(function (a) { return a.dataset.cat === depart; })) depart = 'tous';
     appliquer(depart, p.get('tri') === 'anciens' ? 'anciens' : 'recents', true);
+    rail();
     liens.forEach(function (a) {
       a.addEventListener('click', function (ev) { ev.preventDefault(); if (a.getAttribute('aria-current')) return; changer(a.dataset.cat); });
     });
@@ -433,8 +477,297 @@
     });
   }
 
+
+  /* ---------- Recherche intelligente (05/11/2026) ----------
+     Cherche dans les pièces, les looks et leurs articles. Tolère les fautes de frappe (« balkon », « sale de bin »),
+     les accents oubliés, les pluriels et les mots du quotidien (« sdb », « sapin », « hall », « canapé »…).
+     Suggestions au fil de la frappe, flèches du clavier + Entrée, Échap pour fermer, ⌘K / Ctrl K ou « / » pour chercher.
+     Index : recherche.json (généré par build.py), chargé seulement quand on cherche. */
+  var RACINE = document.documentElement.getAttribute('data-racine') || '';
+  var INDEX = null, indexPromesse = null;
+  var VIDES = ' de la le les et du des d l a au aux un une pour en avec sur ce cet cette mon ma mes ton ta tes son sa ses look looks article articles deco idee idees style ambiance chez moi toi pas tres plus ';
+  function norm(t) {
+    return String(t || '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  function racineMot(m) { return m.length > 3 ? m.replace(/(eaux|aux)$/, 'al').replace(/[sx]$/, '') : m; }
+  function mots(t) {
+    return norm(t).split(' ').filter(function (m) { return m && VIDES.indexOf(' ' + m + ' ') < 0; }).map(racineMot);
+  }
+  // distance d'édition (avec inversion de deux lettres), arrêt rapide au-delà de max
+  function distance(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var d = [], i, j;
+    for (i = 0; i <= a.length; i++) { d[i] = [i]; }
+    for (j = 1; j <= b.length; j++) d[0][j] = j;
+    for (i = 1; i <= a.length; i++) {
+      var mini = max + 1;
+      for (j = 1; j <= b.length; j++) {
+        var c = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+        if (d[i][j] < mini) mini = d[i][j];
+      }
+      if (mini > max) return max + 1;
+    }
+    return d[a.length][b.length];
+  }
+  // ressemblance entre un mot tapé et un mot de l'index : 1 = identique, 0 = rien à voir
+  function ressemblance(q, t) {
+    if (q === t) return 1;
+    if (q.length >= 2 && t.indexOf(q) === 0) return q.length >= 3 ? .9 : .75;  // début de mot (on est en train de taper)
+    // fautes tolérées : 1 pour les mots courts (« bin » -> « bain »), 2 ou 3 pour les longs ;
+    // au-delà d'une faute, la première lettre doit être la bonne (« balkon » ne doit pas donner « salon »)
+    var max = q.length <= 2 ? 0 : q.length <= 5 ? 1 : q.length <= 8 ? 2 : 3;
+    if (!max || (q.length === 3 && (t.length < 4 || t[0] !== q[0]))) return 0;
+    var dd = distance(q, t, max);
+    if (dd > 1 && t[0] !== q[0]) return 0;
+    if (dd <= max) return .86 - .12 * dd;
+    if (q.length >= 4 && t.length > q.length) {  // début de mot avec une faute (« balk » -> « balcon »)
+      dd = distance(q, t.slice(0, q.length), 1);
+      if (dd <= 1) return .62;
+    }
+    return 0;
+  }
+  function preparer(d) {
+    function champ(liste) { var out = []; liste.forEach(function (x) { mots(x[0]).forEach(function (m) { out.push([m, x[1]]); }); }); return out; }
+    var pieces = {};
+    d.pieces.forEach(function (p) {
+      pieces[p.id] = p;
+      p._m = champ([[p.nom, 3]].concat(p.alias.map(function (a) { return [a, 2.6]; })));
+      p._phrases = [norm(p.nom)].concat(p.alias.map(norm));
+    });
+    d.looks.forEach(function (l) {
+      var f = [[l.titre, 3], [l.piece, 2.4], [l.intro, .9]];
+      l.cats.forEach(function (c) { if (pieces[c]) f = f.concat(pieces[c].alias.map(function (a) { return [a, 1.8]; })); });
+      l.articles.forEach(function (a) { f.push([a, 1.3]); });
+      l._m = champ(f);
+      l._articles = l.articles.map(function (a, k) { return { nom: a, n: k + 1, look: l, _m: champ([[a, 3], [l.titre, .4]]) }; });
+    });
+    d._vocab = {};
+    function vocab(liste) { liste.forEach(function (x) { d._vocab[x[0]] = 1; }); }
+    d.pieces.forEach(function (p) { vocab(p._m); }); d.looks.forEach(function (l) { vocab(l._m); });
+    return d;
+  }
+  function charger_index() {
+    if (!indexPromesse) indexPromesse = fetch(RACINE + 'recherche.json').then(function (r) { return r.json(); })
+      .then(function (d) { INDEX = preparer(d); return INDEX; }).catch(function () { indexPromesse = null; return null; });
+    return indexPromesse;
+  }
+  // note d'un élément pour les mots tapés : tous les mots doivent trouver quelque chose (sinon note réduite)
+  function noter(m, q) {
+    var total = 0, trouves = 0;
+    q.forEach(function (w) {
+      var best = 0;
+      m.forEach(function (x) { var r = ressemblance(w, x[0]); if (r) { r *= x[1]; if (r > best) best = r; } });
+      if (best) trouves++;
+      total += best;
+    });
+    if (!trouves) return 0;
+    return trouves === q.length ? total : total * .35 * trouves / q.length;
+  }
+  // « Tu voulais dire… » : on remplace chaque mot mal tapé par le mot le plus proche de l'index
+  function correction(texte) {
+    var change = false, out = norm(texte).split(' ').map(function (brut) {
+      if (VIDES.indexOf(' ' + brut + ' ') >= 0) return brut;
+      var w = racineMot(brut);
+      if (INDEX._vocab[w] || w.length < 4) return brut;
+      var best = null, bs = 0;
+      for (var v in INDEX._vocab) { var r = ressemblance(w, v); if (r > bs && r < .9) { bs = r; best = v; } }
+      if (best && bs >= .62 && best.indexOf(w) !== 0) { change = true; return best; }
+      return brut;
+    });
+    return change ? out.join(' ') : '';
+  }
+  function chercher(texte) {
+    var q = mots(texte), nt = norm(texte), phrase = '';
+    if (!q.length) return null;
+    var pieces = INDEX.pieces.map(function (p) {
+      var sc = noter(p._m, q);
+      // la phrase entière ressemble au nom de la pièce (« sale de bin », « salle a mange »)
+      if (p._phrases.some(function (ph) {
+        if (!ph) return false;
+        if (nt === ph || (nt.length >= 4 && ph.indexOf(nt) === 0)) return true;
+        if (ph.indexOf(' ') > 0 && nt.length >= 6 && distance(nt, ph, Math.floor(ph.length / 5)) <= Math.floor(ph.length / 5)) { phrase = p.nom.toLowerCase(); return true; }
+        return false;
+      })) sc += 4;
+      return { p: p, sc: sc };
+    }).filter(function (x) { return x.sc >= 2.2; }).sort(function (a, b) { return b.sc - a.sc; });
+    var looks = INDEX.looks.map(function (l) { return { l: l, sc: noter(l._m, q) }; })
+      .filter(function (x) { return x.sc >= 1.6 * q.length; }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+    var articles = [];
+    INDEX.looks.forEach(function (l) { l._articles.forEach(function (a) { var sc = noter(a._m, q); if (sc >= 2.4 * q.length) articles.push({ a: a, sc: sc }); }); });
+    articles.sort(function (a, b) { return b.sc - a.sc; });
+    return { pieces: pieces.slice(0, 3), looks: looks, articles: articles.slice(0, 5), q: q, correction: phrase || correction(texte) };
+  }
+  function echapper(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // souligne les mots trouvés dans un titre
+  function souligner(titre, q) {
+    return titre.split(/(\s+)/).map(function (m) {
+      var n = racineMot(norm(m));
+      return n && q.some(function (w) { return ressemblance(w, n) >= .62; }) ? '<mark>' + echapper(m) + '</mark>' : echapper(m);
+    }).join('');
+  }
+  function compterRecherche(texte) {
+    var gc = window.goatcounter; if (!gc || exclu() || !texte) return;
+    try {
+      if (gc.filter && gc.filter()) return;
+      var v = { path: 'recherche/' + norm(texte).slice(0, 40).replace(/ /g, '-'), title: 'Recherche : ' + texte.slice(0, 60), event: true };
+      var u = gc.url && gc.url(v); if (u && navigator.sendBeacon) navigator.sendBeacon(u); else if (gc.count) gc.count(v);
+    } catch (e) {}
+  }
+
+  var surAccueil = !!document.getElementById('grille');
+  function ouvrirRecherche(texte) {
+    var accueil = document.querySelector('.accueil-recherche input');
+    if (surAccueil && accueil) {
+      accueil.closest('.accueil-titre').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+      if (texte != null) { accueil.value = texte; }
+      setTimeout(function () { accueil.focus(); accueil.dispatchEvent(new Event('input')); }, RM ? 0 : 250);
+      return;
+    }
+    var pan = document.getElementById('recherche-panneau'); if (!pan) return;
+    pan.hidden = false; void pan.offsetWidth; pan.classList.add('ouvert');
+    document.documentElement.classList.add('recherche-active');
+    var b = document.querySelector('.recherche-bouton'); if (b) b.setAttribute('aria-expanded', 'true');
+    var i = pan.querySelector('input'); if (texte != null) i.value = texte;
+    setTimeout(function () { i.focus(); i.dispatchEvent(new Event('input')); }, 30);
+  }
+  function fermerPanneau() {
+    var pan = document.getElementById('recherche-panneau'); if (!pan || pan.hidden) return;
+    pan.classList.remove('ouvert'); document.documentElement.classList.remove('recherche-active');
+    var b = document.querySelector('.recherche-bouton'); if (b) { b.setAttribute('aria-expanded', 'false'); b.focus(); }
+    setTimeout(function () { if (!pan.classList.contains('ouvert')) pan.hidden = true; }, RM ? 0 : 300);
+  }
+
+  function rechercheChamp(bloc) {
+    var input = bloc.querySelector('input'), liste = bloc.querySelector('.recherche-resultats');
+    var effacer = bloc.querySelector('.recherche-effacer'), raccourci = bloc.querySelector('.recherche-raccourci');
+    var dansPanneau = !!bloc.closest('.recherche-panneau'), options = [], actif = -1, minuteurCompte = null;
+    if (raccourci && !dansPanneau) { raccourci.textContent = /Mac|iPhone|iPad/.test(navigator.platform || UA) ? '⌘ K' : 'Ctrl K'; raccourci.hidden = false; }
+    function lien(href) { return RACINE + href; }
+    function option(o) {
+      var vign = o.img ? '<span class="rs-vignette"><img src="' + RACINE + echapper(o.img) + '" alt="" loading="lazy"></span>' : '<span class="rs-pastille">' + (o.pastille || '') + '</span>';
+      return '<a class="rs-option ' + (o.cls || '') + '" role="option" id="' + o.id + '" href="' + echapper(o.href) + '" data-action="' + (o.action || '') + '" data-val="' + echapper(o.val || '') + '" aria-selected="false">'
+        + vign + '<span class="rs-texte"><span class="rs-titre">' + o.titre + '</span>' + (o.sous ? '<span class="rs-sous">' + echapper(o.sous) + '</span>' : '') + '</span>'
+        + (o.nb ? '<span class="rs-nb">' + echapper(o.nb) + '</span>' : '') + '</a>';
+    }
+    function afficher(html) {
+      liste.innerHTML = html; liste.hidden = !html;
+      input.setAttribute('aria-expanded', html ? 'true' : 'false');
+      options = Array.prototype.slice.call(liste.querySelectorAll('.rs-option')); actif = -1; input.removeAttribute('aria-activedescendant');
+    }
+    function selection(k) {
+      options.forEach(function (o, i) { o.setAttribute('aria-selected', i === k ? 'true' : 'false'); });
+      actif = k;
+      if (k >= 0) { input.setAttribute('aria-activedescendant', options[k].id); options[k].scrollIntoView({ block: 'nearest' }); }
+      else input.removeAttribute('aria-activedescendant');
+    }
+    var uid = 0;
+    function suggestionsVides() {
+      var h = '<p class="rs-groupe">Les pièces</p>';
+      INDEX.pieces.slice(0, 6).forEach(function (p) {
+        h += option({ id: 'rs' + (uid++), img: p.img, titre: echapper(p.nom), nb: p.nb + (p.nb > 1 ? ' looks' : ' look'), href: lien('index.html?piece=' + p.id), action: 'piece', val: p.id });
+      });
+      h += '<p class="rs-groupe">Les derniers looks</p>';
+      INDEX.looks.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 3).forEach(function (l) {
+        h += option({ id: 'rs' + (uid++), img: l.img, titre: echapper(l.titre), sous: 'Look n°' + l.num + ', ' + l.piece, href: lien('looks/' + l.id + '.html'), action: 'look' });
+      });
+      return h;
+    }
+    function rendre() {
+      var texte = input.value;
+      if (effacer) effacer.hidden = !texte;
+      if (!INDEX) { charger_index().then(function (d) { if (d) rendre(); }); return; }
+      if (!norm(texte)) { afficher(document.activeElement === input ? suggestionsVides() : ''); return; }
+      var r = chercher(texte); if (!r) { afficher(''); return; }
+      var h = '';
+      if (r.correction && !r.looks.length && !r.pieces.length) {
+        var r2 = chercher(r.correction);
+        if (r2 && (r2.looks.length || r2.pieces.length)) { h += '<p class="rs-correction">Résultats pour <b>' + echapper(r.correction) + '</b></p>'; r = r2; }
+      } else if (r.correction) h += '<p class="rs-correction">Tu voulais dire <b>' + echapper(r.correction) + '</b> ?</p>';
+      if (r.pieces.length) {
+        h += '<p class="rs-groupe">Pièces</p>';
+        r.pieces.forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.p.img, titre: echapper(x.p.nom), nb: x.p.nb + (x.p.nb > 1 ? ' looks' : ' look'), href: lien('index.html?piece=' + x.p.id), action: 'piece', val: x.p.id }); });
+      }
+      if (r.looks.length) {
+        h += '<p class="rs-groupe">Looks</p>';
+        r.looks.slice(0, 4).forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.l.img, titre: souligner(x.l.titre, r.q), sous: 'Look n°' + x.l.num + ', ' + x.l.piece + ', ' + x.l.articles.length + ' articles', href: lien('looks/' + x.l.id + '.html'), action: 'look' }); });
+      }
+      if (r.articles.length) {
+        h += '<p class="rs-groupe">Articles</p>';
+        r.articles.forEach(function (x) { h += option({ id: 'rs' + (uid++), cls: 'rs-article', pastille: x.a.n, titre: souligner(x.a.nom, r.q), sous: 'Dans le look n°' + x.a.look.num + ' : ' + x.a.look.titre, href: lien('looks/' + x.a.look.id + '.html#article-' + x.a.n), action: 'article' }); });
+      }
+      if (r.looks.length > 1) {
+        var ids = r.looks.map(function (x) { return x.l.id; }).join(' ');
+        h += option({ id: 'rs' + (uid++), cls: 'rs-tout', pastille: LOUPE_MINI, titre: 'Voir les ' + r.looks.length + ' looks pour « ' + echapper(texte.trim()) + ' »', href: lien('index.html?q=' + encodeURIComponent(texte.trim())), action: 'tout', val: ids });
+      }
+      if (!h || (!r.pieces.length && !r.looks.length && !r.articles.length)) {
+        h = '<p class="rs-vide">Aucun look pour « ' + echapper(texte.trim()) + ' ». Essaie une pièce :</p><div class="rs-vide-pieces">'
+          + INDEX.pieces.slice(0, 6).map(function (p) { return '<button type="button" data-q="' + echapper(p.nom) + '">' + echapper(p.nom) + '</button>'; }).join('') + '</div>';
+      }
+      afficher(h);
+      if (options.length && norm(texte).length >= 2) selection(0);
+      clearTimeout(minuteurCompte); minuteurCompte = setTimeout(function () { compterRecherche(texte.trim()); }, 1500);
+    }
+    function choisir(o, ev) {
+      var action = o.dataset.action;
+      clearTimeout(minuteurCompte); compterRecherche(input.value.trim());
+      if (surAccueil && (action === 'piece' || action === 'tout')) {
+        if (ev) ev.preventDefault();
+        afficher(''); if (dansPanneau) fermerPanneau(); input.blur();
+        if (action === 'piece' && appliquerFiltre) appliquerFiltre(o.dataset.val, null, true);
+        if (action === 'tout' && filtrerRecherche) filtrerRecherche(o.dataset.val.split(' '), input.value.trim());
+        return;
+      }
+      if (!ev) location.href = o.href;  // Entrée au clavier ; un clic suit le lien normalement
+    }
+    input.addEventListener('input', rendre);
+    input.addEventListener('focus', function () { charger_index().then(function () { rendre(); }); });
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (liste.hidden) rendre(); else selection(Math.min(options.length - 1, actif + 1)); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); selection(Math.max(-1, actif - 1)); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); var o = options[actif >= 0 ? actif : 0]; if (o) choisir(o); }
+      else if (ev.key === 'Escape') { if (!liste.hidden && input.value) { input.value = ''; rendre(); } else if (dansPanneau) fermerPanneau(); else { afficher(''); input.blur(); } }
+    });
+    liste.addEventListener('mousedown', function (ev) { ev.preventDefault(); });  // garde le champ actif pendant le clic
+    liste.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-q]');
+      if (b) { input.value = b.dataset.q; input.focus(); rendre(); return; }
+      var o = ev.target.closest('.rs-option'); if (o) choisir(o, ev);
+    });
+    liste.addEventListener('mousemove', function (ev) { var o = ev.target.closest('.rs-option'); if (o) selection(options.indexOf(o)); });
+    if (effacer) effacer.addEventListener('click', function () { input.value = ''; input.focus(); rendre(); });
+    if (!dansPanneau) document.addEventListener('click', function (ev) { if (!bloc.contains(ev.target)) afficher(''); });
+    var idees = bloc.parentNode.querySelector('.idees');
+    if (idees) idees.addEventListener('click', function (ev) { var b = ev.target.closest('button[data-q]'); if (b) { input.value = b.dataset.q; input.focus(); rendre(); } });
+    return input;
+  }
+  var LOUPE_MINI = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.4 15.4 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  function rechercheSite() {
+    document.querySelectorAll('[data-recherche]').forEach(rechercheChamp);
+    var bouton = document.querySelector('.recherche-bouton'), pan = document.getElementById('recherche-panneau');
+    if (bouton) bouton.addEventListener('click', function () { ouvrirRecherche(); });
+    if (pan) pan.addEventListener('click', function (ev) { if (ev.target.closest('[data-fermer-recherche]')) fermerPanneau(); });
+    document.addEventListener('keydown', function (ev) {
+      var cible = ev.target, saisie = cible && (cible.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(cible.tagName));
+      if ((ev.key === 'k' || ev.key === 'K') && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); ouvrirRecherche(); }
+      else if (ev.key === '/' && !saisie) { ev.preventDefault(); ouvrirRecherche(); }
+      else if (ev.key === 'Escape' && pan && !pan.hidden) fermerPanneau();
+    });
+    // accueil ouvert avec ?q=… (lien « Voir les looks pour … » depuis une autre page)
+    var q = null; try { q = new URLSearchParams(location.search).get('q'); } catch (e) {}
+    if (q && surAccueil) charger_index().then(function (d) {
+      if (!d || !filtrerRecherche) return;
+      var r = chercher(q), ids = r ? r.looks.map(function (x) { return x.l.id; }) : [];
+      var champ = document.querySelector('.accueil-recherche input'); if (champ) champ.value = q;
+      if (ids.length) filtrerRecherche(ids, q, true);
+    });
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite();
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
     carrousel();
