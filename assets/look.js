@@ -876,47 +876,68 @@
 
   /* ---------- Page À propos : « Comment naît un look » (09/11/2026) ----------
      4 étapes sur le même cadre : les articles (planche), la pièce (décor), la vérification (calque), les numéros.
-     À l'arrivée sur la section, les étapes défilent une fois toutes seules ; un clic arrête la lecture. */
+     Le look change à chaque visite (jamais deux fois de suite le même, mémorisé sur l'appareil, clé « am_atelier »)
+     et le bouton « Un autre exemple » passe au suivant. À l'arrivée sur la section, les étapes défilent une fois. */
   function demoAtelier() {
     var s = document.querySelector('.atelier[data-atelier]');
     if (!s) return;
     var d; try { d = JSON.parse(s.getAttribute('data-atelier')); } catch (e) { return; }
+    var V = d.variantes || []; if (!V.length) return;
     var boutons = [].slice.call(s.querySelectorAll('.etape')), zone = s.querySelector('.atelier-article');
-    var couche = s.querySelector('.couche-numeros'), choisi = 1, minuteur = null, lecture = false;
-    d.articles.forEach(function (a, i) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'pastille'; b.textContent = a.n;
-      b.style.left = a.pos[0] + '%'; b.style.top = a.pos[1] + '%'; b.style.setProperty('--i', i);
-      b.setAttribute('aria-label', 'Article ' + a.n + ' : ' + a.nom);
-      b.addEventListener('click', function () { arreter(); choisi = a.n; aller(4); });
-      couche.appendChild(b);
-    });
+    var couche = s.querySelector('.couche-numeros'), planche = s.querySelector('.couche-planche'), decor = s.querySelector('.couche-decor');
+    var calque = s.querySelector('.couche-calque'), lienLook = s.querySelector('.atelier-lien'), autre = s.querySelector('.atelier-autre');
+    var v = null, iv = 0, choisi = 1, minuteur = null, lecture = false, etape = 4;
     function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function charger(k) {
+      iv = (k + V.length) % V.length; v = V[iv]; choisi = 1;
+      try { localStorage.setItem('am_atelier', v.look); } catch (e) {}
+      planche.src = RACINE + v.planche; planche.style.background = v.fond;
+      decor.src = RACINE + v.image; decor.alt = v.alt;
+      calque.innerHTML = v.calque;
+      if (lienLook) { lienLook.href = RACINE + v.lien; lienLook.textContent = v.titre; }
+      couche.innerHTML = '';
+      v.articles.forEach(function (a, i) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'pastille'; b.textContent = a.n;
+        b.style.left = a.pos[0] + '%'; b.style.top = a.pos[1] + '%'; b.style.setProperty('--i', i);
+        b.setAttribute('aria-label', 'Article ' + a.n + ' : ' + a.nom);
+        b.addEventListener('click', function () { arreter(); choisi = a.n; aller(4); });
+        couche.appendChild(b);
+      });
+    }
     function aller(k) {
-      s.setAttribute('data-etape', k);
+      etape = k; s.setAttribute('data-etape', k);
       boutons.forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.etape === k ? 'true' : 'false'); });
       [].forEach.call(couche.children, function (p, i) { p.classList.toggle('actif', k === 4 && i + 1 === choisi); });
-      if (k < 4) { zone.innerHTML = '<p class="atelier-legende">' + echap(d.legendes[k - 1]) + '</p>'; return; }
-      var a = d.articles[choisi - 1];
+      if (k < 4) { zone.innerHTML = '<p class="atelier-legende">' + echap(v.legendes[k - 1]) + '</p>'; return; }
+      var a = v.articles[choisi - 1];
       zone.innerHTML = '<div class="atelier-fiche"><img src="' + RACINE + echap(a.img) + '" alt="" width="76" height="76">'
         + '<div><p class="atelier-fiche-nom">' + a.n + '. ' + echap(a.nom) + '</p>'
-        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(d.lien) + '#article-' + a.n + '">Voir l\'article dans le look</a></p></div></div>';
+        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(v.lien) + '#article-' + a.n + '">Voir l\'article dans le look</a></p></div></div>';
     }
     function arreter() { lecture = false; s.classList.remove('lecture'); clearTimeout(minuteur); }
     function lire(k) {
       aller(k); if (k >= 4) { arreter(); return; }
       minuteur = setTimeout(function () { if (lecture) lire(k + 1); }, 2600);
     }
+    function jouer() {
+      if (RM) { aller(4); return; }
+      arreter(); lecture = true; s.classList.add('lecture'); lire(1);
+    }
+    // choix du look de cette visite : au hasard, mais jamais celui de la visite précédente
+    var dernier = null; try { dernier = localStorage.getItem('am_atelier'); } catch (e) {}
+    var possibles = V.map(function (x, k) { return k; }).filter(function (k) { return V.length < 2 || V[k].look !== dernier; });
+    charger(possibles[Math.floor(Math.random() * possibles.length)]);
     boutons.forEach(function (b) { b.addEventListener('click', function () { arreter(); aller(+b.dataset.etape); }); });
+    if (autre) autre.addEventListener('click', function () {
+      // fondu rapide, puis le look suivant rejoue ses étapes
+      s.classList.add('change');
+      setTimeout(function () { charger(iv + 1); s.classList.remove('change'); jouer(); }, RM ? 0 : 280);
+    });
     aller(4);  // la page est complète au repos : la pièce et ses numéros
     if (RM || !('IntersectionObserver' in window)) return;
     var vu = false, obs = new IntersectionObserver(function (es) {
-      es.forEach(function (en) {
-        if (en.isIntersecting && !vu) {
-          vu = true; obs.disconnect();
-          lecture = true; s.style.setProperty('--duree-etape', '2.6s'); s.classList.add('lecture'); lire(1);
-        }
-      });
+      es.forEach(function (en) { if (en.isIntersecting && !vu) { vu = true; obs.disconnect(); jouer(); } });
     }, { threshold: .45 });
     obs.observe(s.querySelector('.atelier-cadre'));
   }

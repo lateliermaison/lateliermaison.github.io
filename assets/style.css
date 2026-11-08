@@ -432,6 +432,10 @@ html.recherche-active { overflow: hidden; }
   .atelier-visuel { position: sticky; top: 24px; }
 }
 .atelier-chapo { margin: 0; color: var(--taupe); }
+.atelier-autre { font: 600 .92rem/1.4 var(--texte); color: var(--noyer); background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--laiton); text-underline-offset: 3px; white-space: nowrap; }
+.atelier-autre:hover { text-decoration-thickness: 2px; }
+.atelier.change .atelier-cadre img, .atelier.change .couche-calque, .atelier.change .couche-numeros { opacity: 0 !important; transition: opacity .25s ease; }
 .etapes { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--trait); }
 .etapes li { border-top: 1px solid var(--trait); }
 .etape {
@@ -460,7 +464,7 @@ html.recherche-active { overflow: hidden; }
 }
 .couche { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s ease; }
 img.couche { object-fit: cover; }
-.couche-planche { background: #F3E4D8; }  /* même beige que le fond de la planche */
+.couche-planche { background: #F3E4D8; }  /* fond de la planche (chaque look donne le sien, voir LOOKS_ATELIER) */
 img.couche-planche { object-fit: contain; padding: 22% 6% 4%; }  /* l'arche ne coupe pas les articles */
 .atelier[data-etape="1"] .couche-planche,
 .atelier[data-etape="2"] .couche-decor, .atelier[data-etape="3"] .couche-decor, .atelier[data-etape="4"] .couche-decor,
