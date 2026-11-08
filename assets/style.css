@@ -412,3 +412,84 @@ html.recherche-active { overflow: hidden; }
 .filtres-infos { justify-content: flex-start; } .filtres-infos .tri { margin-left: auto; }
 
 @media (prefers-reduced-motion: reduce) { .recherche-fond, .recherche-feuille, .filtres-loupe { transition: none; } }
+
+/* ---------- Page À propos (09/11/2026) : démonstration « Comment naît un look » ---------- */
+.apropos { display: grid; gap: 64px; padding: 28px 0 80px; }
+.apropos-tete { max-width: 62ch; }
+.apropos-tete h1 { font: 400 clamp(2.4rem, 6vw, 3.6rem)/1.05 var(--titre); margin: 0 0 18px; letter-spacing: -.01em; text-wrap: balance; }
+.apropos-tete p { margin: 0; font-size: 1.15rem; color: var(--taupe); }
+.apropos-tete strong { color: var(--noyer); font-weight: 600; }
+.apropos-bloc { max-width: 68ch; }
+.apropos-bloc h2, .atelier h2 { font: 400 clamp(1.6rem, 3.6vw, 2.1rem)/1.15 var(--titre); margin: 0 0 14px; text-wrap: balance; }
+.apropos-bloc p { margin: 0 0 14px; }
+
+/* téléphone : titre, image, puis les étapes ; ordinateur : titre et étapes à gauche, image à droite */
+.atelier { display: grid; gap: 24px; grid-template-areas: "tete" "visuel" "etapes"; }
+.atelier-tete { grid-area: tete; } .atelier-visuel { grid-area: visuel; } .etapes { grid-area: etapes; }
+@media (min-width: 900px) {
+  .atelier { grid-template-columns: minmax(0, 1fr) minmax(0, 400px); grid-template-rows: auto 1fr; grid-template-areas: "tete visuel" "etapes visuel"; gap: 0 72px; align-items: start; }
+  .atelier-tete { padding-bottom: 22px; }
+  .atelier-visuel { position: sticky; top: 24px; }
+}
+.atelier-chapo { margin: 0; color: var(--taupe); }
+.etapes { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--trait); }
+.etapes li { border-top: 1px solid var(--trait); }
+.etape {
+  display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 14px; align-items: start;
+  width: 100%; padding: 18px 0; background: none; border: 0; text-align: left; cursor: pointer;
+  font: inherit; color: var(--taupe); position: relative;
+}
+.etape-n {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--trait);
+  display: grid; place-items: center; font: 400 1.05rem/1 var(--titre); color: var(--taupe);
+  transition: background .35s ease, color .35s ease, border-color .35s ease;
+}
+.etape-txt { display: grid; gap: 4px; min-width: 0; }
+.etape-titre { font: 400 1.3rem/1.2 var(--titre); color: var(--taupe); transition: color .35s ease; }
+.etape-desc { font-size: .98rem; line-height: 1.55; }
+.etape:hover .etape-titre, .etape[aria-pressed="true"] .etape-titre { color: var(--noyer); }
+.etape[aria-pressed="true"] { color: var(--noyer); }
+.etape[aria-pressed="true"] .etape-n { background: var(--noyer); border-color: var(--noyer); color: var(--craie); }
+/* fil laiton qui avance pendant la lecture automatique */
+.etape::after { content: ""; position: absolute; left: 52px; right: 0; bottom: -1px; height: 2px; background: var(--laiton); transform: scaleX(0); transform-origin: left; }
+.atelier.lecture .etape[aria-pressed="true"]::after { transform: scaleX(1); transition: transform var(--duree-etape, 2.6s) linear; }
+
+.atelier-cadre {
+  position: relative; width: min(100%, 400px); margin-inline: auto; aspect-ratio: 2 / 3;
+  border-radius: 200px 200px 16px 16px; overflow: hidden; background: var(--trait);
+}
+.couche { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s ease; }
+img.couche { object-fit: cover; }
+.couche-planche { background: #F3E4D8; }  /* même beige que le fond de la planche */
+img.couche-planche { object-fit: contain; padding: 22% 6% 4%; }  /* l'arche ne coupe pas les articles */
+.atelier[data-etape="1"] .couche-planche,
+.atelier[data-etape="2"] .couche-decor, .atelier[data-etape="3"] .couche-decor, .atelier[data-etape="4"] .couche-decor,
+.atelier[data-etape="3"] .couche-calque, .atelier[data-etape="4"] .couche-numeros { opacity: 1; }
+.couche-numeros { pointer-events: none; }
+.atelier[data-etape="4"] .couche-numeros { pointer-events: auto; }
+.couche-numeros .pastille { opacity: 0; transform: translate(-50%, -50%) scale(.5); transition: opacity .3s ease, transform .3s ease, background .2s ease; }
+.atelier[data-etape="4"] .couche-numeros .pastille { opacity: 1; transform: translate(-50%, -50%) scale(1); transition-delay: calc(var(--i, 0) * 45ms), calc(var(--i, 0) * 45ms), 0s; }
+.atelier[data-etape="4"] .couche-numeros .pastille.actif, .atelier[data-etape="4"] .couche-numeros .pastille:hover { transform: translate(-50%, -50%) scale(1.12); transition-delay: 0s; }
+.couche-calque line { stroke: var(--noyer); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.couche-calque .cote-trait { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.atelier[data-etape="3"] .couche-calque .cote-trait { stroke-dashoffset: 0; transition: stroke-dashoffset 1.1s ease .2s; }
+.couche-calque text { font: 600 3.4px/1 var(--texte); fill: var(--noyer); paint-order: stroke; stroke: var(--craie); stroke-width: .9px; }
+
+.atelier-article { width: min(100%, 400px); margin: 16px auto 0; min-height: 84px; }
+.atelier-legende { margin: 0; color: var(--taupe); font-size: .98rem; }
+.atelier-fiche { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px; align-items: center; }
+.atelier-fiche img { width: 76px; height: 76px; object-fit: cover; border-radius: 12px; background: var(--craie); }
+.atelier-fiche-nom { font: 400 1.1rem/1.25 var(--titre); margin: 0 0 4px; }
+.atelier-fiche-prix { margin: 0; color: var(--taupe); font-size: .92rem; }
+.atelier-fiche a { color: var(--noyer); font-weight: 600; font-size: .92rem; }
+
+.criteres { display: grid; gap: 20px 40px; margin: 8px 0 0; }
+@media (min-width: 640px) { .criteres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.criteres div { border-top: 1px solid var(--trait); padding-top: 14px; }
+.criteres dt { font: 400 1.2rem/1.2 var(--titre); margin: 0 0 4px; }
+.criteres dd { margin: 0; color: var(--taupe); }
+@media (prefers-reduced-motion: reduce) {
+  .couche, .couche-numeros .pastille, .etape-n, .etape-titre { transition: none !important; }
+  .atelier[data-etape="3"] .couche-calque .cote-trait { transition: none; }
+}
+

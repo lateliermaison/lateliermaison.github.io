@@ -873,8 +873,56 @@
     setInterval(tourner, 6000);
   }
 
+
+  /* ---------- Page À propos : « Comment naît un look » (09/11/2026) ----------
+     4 étapes sur le même cadre : les articles (planche), la pièce (décor), la vérification (calque), les numéros.
+     À l'arrivée sur la section, les étapes défilent une fois toutes seules ; un clic arrête la lecture. */
+  function demoAtelier() {
+    var s = document.querySelector('.atelier[data-atelier]');
+    if (!s) return;
+    var d; try { d = JSON.parse(s.getAttribute('data-atelier')); } catch (e) { return; }
+    var boutons = [].slice.call(s.querySelectorAll('.etape')), zone = s.querySelector('.atelier-article');
+    var couche = s.querySelector('.couche-numeros'), choisi = 1, minuteur = null, lecture = false;
+    d.articles.forEach(function (a, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'pastille'; b.textContent = a.n;
+      b.style.left = a.pos[0] + '%'; b.style.top = a.pos[1] + '%'; b.style.setProperty('--i', i);
+      b.setAttribute('aria-label', 'Article ' + a.n + ' : ' + a.nom);
+      b.addEventListener('click', function () { arreter(); choisi = a.n; aller(4); });
+      couche.appendChild(b);
+    });
+    function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function aller(k) {
+      s.setAttribute('data-etape', k);
+      boutons.forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.etape === k ? 'true' : 'false'); });
+      [].forEach.call(couche.children, function (p, i) { p.classList.toggle('actif', k === 4 && i + 1 === choisi); });
+      if (k < 4) { zone.innerHTML = '<p class="atelier-legende">' + echap(d.legendes[k - 1]) + '</p>'; return; }
+      var a = d.articles[choisi - 1];
+      zone.innerHTML = '<div class="atelier-fiche"><img src="' + RACINE + echap(a.img) + '" alt="" width="76" height="76">'
+        + '<div><p class="atelier-fiche-nom">' + a.n + '. ' + echap(a.nom) + '</p>'
+        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(d.lien) + '#article-' + a.n + '">Voir l\'article dans le look</a></p></div></div>';
+    }
+    function arreter() { lecture = false; s.classList.remove('lecture'); clearTimeout(minuteur); }
+    function lire(k) {
+      aller(k); if (k >= 4) { arreter(); return; }
+      minuteur = setTimeout(function () { if (lecture) lire(k + 1); }, 2600);
+    }
+    boutons.forEach(function (b) { b.addEventListener('click', function () { arreter(); aller(+b.dataset.etape); }); });
+    aller(4);  // la page est complète au repos : la pièce et ses numéros
+    if (RM || !('IntersectionObserver' in window)) return;
+    var vu = false, obs = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (en.isIntersecting && !vu) {
+          vu = true; obs.disconnect();
+          lecture = true; s.style.setProperty('--duree-etape', '2.6s'); s.classList.add('lecture'); lire(1);
+        }
+      });
+    }, { threshold: .45 });
+    obs.observe(s.querySelector('.atelier-cadre'));
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier();
     // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
     var ordre = document.getElementById('looks-ordre');
     if (ordre && document.querySelector('.look')) {
