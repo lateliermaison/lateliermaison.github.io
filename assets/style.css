@@ -7,6 +7,7 @@
   --taupe: #76675A;
   --laiton: #A07B3F;
   --laiton-clair: #E9DCC3;
+  --laiton-texte: #7E5D2B;  /* laiton foncé pour le texte : contraste 5,1 sur avoine (le laiton seul : 3,3) */
   --trait: #DED3C4;
   --titre: "Marcellus", Georgia, serif;
   --texte: "Figtree", system-ui, -apple-system, sans-serif;
@@ -75,7 +76,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .look-visuel figcaption { margin-top: 10px; font-size: .85rem; color: var(--taupe); }
 
 .look-texte h1 { font: 400 clamp(2.2rem, 6vw, 3.4rem)/1.05 var(--titre); margin: 0 0 6px; }
-.look-num { color: var(--laiton); font: 400 1.05rem/1.4 var(--titre); margin: 0 0 14px; }
+.look-num { color: var(--laiton-texte); font: 400 1.05rem/1.4 var(--titre); margin: 0 0 14px; }
 .look-intro { margin: 0 0 26px; max-width: 46ch; color: #4A3B30; }
 
 .articles { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--trait); }
@@ -112,7 +113,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .pied p { margin: 0; max-width: 60ch; }
 .pied a { color: var(--taupe); }
 
-.pied-liens { display: flex; gap: 20px; }
+.pied-liens { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.pied-liens a { display: inline-block; padding-block: 10px; }  /* zone de clic de 44 px de haut sur téléphone */
 .temoin-exclu { flex-basis: 100%; font-size: .78rem; opacity: .8; }
 
 /* Formulaire de contact */
@@ -137,13 +139,13 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .form-etat.erreur { color: #9a3b2e; font-weight: 600; }
 .formulaire .bouton:disabled { opacity: .6; cursor: wait; }
 .lien-epingle { margin: 22px 0 0; }
-.lien-epingle a { color: var(--noyer); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--laiton); }
+.lien-epingle a { display: inline-block; padding-block: 10px; color: var(--noyer); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--laiton); }
 
 /* Navigation entre looks au doigt + flèche flottante « revenir à l'image » (téléphone, 23/10/2026) */
 main { touch-action: pan-y pinch-zoom; }
 .nav-looks { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--trait); }
 .nav-looks a { color: var(--noyer); text-decoration: none; font: 400 1.05rem/1.3 var(--titre); padding: 8px 2px; }
-.nav-looks a:hover { color: var(--laiton); }
+.nav-looks a:hover { color: var(--laiton-texte); }
 .astuce-glisser { display: none; }
 @media (hover: none) and (max-width: 899px) { .astuce-glisser { display: inline; } }
 .haut {
@@ -251,7 +253,7 @@ html.menu-actif { overflow: hidden; }
   flex: none; padding: 10px 0 11px; border-bottom: 2px solid transparent;
   color: var(--taupe); text-decoration: none; white-space: nowrap; font-size: .98rem;
 }
-.filtre span { font-size: .74rem; color: var(--laiton); margin-left: 2px; vertical-align: 1px; }
+.filtre span { font-size: .74rem; color: var(--laiton-texte); margin-left: 2px; vertical-align: 1px; }
 .filtre:hover { color: var(--noyer); }
 .filtre[aria-current] { color: var(--noyer); border-bottom-color: var(--laiton); font-weight: 600; }
 .filtres-infos { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 18px; }
@@ -321,7 +323,7 @@ html.menu-actif { overflow: hidden; }
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--noyer);
   font: 400 1.02rem/1.2 var(--texte); outline: none; -webkit-appearance: none; appearance: none;
 }
-.recherche-champ input::placeholder { color: #9A8B7D; }
+.recherche-champ input::placeholder { color: #7A6A5C; }
 .recherche-champ input::-webkit-search-cancel-button { display: none; }
 .recherche-effacer { position: relative; flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--taupe); cursor: pointer; }
 .recherche-effacer::before, .recherche-effacer::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.6px; background: currentColor; transform: translate(-50%, -50%) rotate(45deg); }
@@ -366,7 +368,7 @@ html.menu-actif { overflow: hidden; }
 .rs-titre { display: block; font: 400 1.02rem/1.25 var(--titre); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rs-option.rs-article .rs-titre { font: 600 .92rem/1.3 var(--texte); }
 .rs-sous { display: block; font-size: .8rem; color: var(--taupe); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rs-nb { font-size: .78rem; color: var(--laiton); white-space: nowrap; }
+.rs-nb { font-size: .78rem; color: var(--laiton-texte); white-space: nowrap; }
 .rs-option mark { background: none; color: inherit; text-decoration: underline; text-decoration-color: var(--laiton); text-underline-offset: 3px; }
 .rs-tout { grid-template-columns: 36px 1fr; margin-top: 4px; border-top: 1px solid var(--trait); border-radius: 0 0 14px 14px; padding-top: 11px; }
 .rs-tout .rs-titre { font: 600 .92rem/1.3 var(--texte); }
@@ -423,77 +425,140 @@ html.recherche-active { overflow: hidden; }
 .apropos-bloc h2, .atelier h2 { font: 400 clamp(1.6rem, 3.6vw, 2.1rem)/1.15 var(--titre); margin: 0 0 14px; text-wrap: balance; }
 .apropos-bloc p { margin: 0 0 14px; }
 
-/* téléphone : titre, image, puis les étapes ; ordinateur : titre et étapes à gauche, image à droite */
-.atelier { display: grid; gap: 24px; grid-template-areas: "tete" "visuel" "etapes"; }
-.atelier-tete { grid-area: tete; } .atelier-visuel { grid-area: visuel; } .etapes { grid-area: etapes; }
-@media (min-width: 900px) {
-  .atelier { grid-template-columns: minmax(0, 1fr) minmax(0, 400px); grid-template-rows: auto 1fr; grid-template-areas: "tete visuel" "etapes visuel"; gap: 0 72px; align-items: start; }
-  .atelier-tete { padding-bottom: 22px; }
-  .atelier-visuel { position: sticky; top: 24px; }
+/* ---------- « Comment naît un look » en cinématique (09/11/2026, en test) ----------
+   La scène reste collée en haut de l'écran pendant qu'on fait défiler ; chaque 80 % d'écran fait avancer
+   d'une étape. Le texte de l'étape reste toujours à côté (ordinateur) ou au-dessus (téléphone) de l'image. */
+.cine { position: relative; height: calc(100svh + 4 * 80svh); }
+.cine-scene {
+  position: sticky; top: 0; height: 100svh; box-sizing: border-box;
+  display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding-block: 14px 10px;
 }
-.atelier-chapo { margin: 0; color: var(--taupe); }
-.atelier-autre { font: 600 .92rem/1.4 var(--texte); color: var(--noyer); background: none; border: 0; padding: 0; cursor: pointer;
+.cine-texte { min-width: 0; }
+.cine h2 { font: 400 clamp(1.45rem, 3.6vw, 2.1rem)/1.15 var(--titre); margin: 0 0 4px; text-wrap: balance; }
+.atelier-chapo { margin: 0; color: var(--taupe); font-size: .95rem; }
+.atelier-autre { font: 600 .92rem/1.4 var(--texte); color: var(--noyer); background: none; border: 0; padding: 10px 0; cursor: pointer;
   text-decoration: underline; text-decoration-color: var(--laiton); text-underline-offset: 3px; white-space: nowrap; }
 .atelier-autre:hover { text-decoration-thickness: 2px; }
-.atelier.change .atelier-cadre img, .atelier.change .couche-calque, .atelier.change .couche-numeros { opacity: 0 !important; transition: opacity .25s ease; }
-.etapes { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--trait); }
-.etapes li { border-top: 1px solid var(--trait); }
-.etape {
-  display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 14px; align-items: start;
-  width: 100%; padding: 18px 0; background: none; border: 0; text-align: left; cursor: pointer;
-  font: inherit; color: var(--taupe); position: relative;
-}
-.etape-n {
-  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--trait);
-  display: grid; place-items: center; font: 400 1.05rem/1 var(--titre); color: var(--taupe);
-  transition: background .35s ease, color .35s ease, border-color .35s ease;
-}
-.etape-txt { display: grid; gap: 4px; min-width: 0; }
-.etape-titre { font: 400 1.3rem/1.2 var(--titre); color: var(--taupe); transition: color .35s ease; }
-.etape-desc { font-size: .98rem; line-height: 1.55; }
-.etape:hover .etape-titre, .etape[aria-pressed="true"] .etape-titre { color: var(--noyer); }
-.etape[aria-pressed="true"] { color: var(--noyer); }
-.etape[aria-pressed="true"] .etape-n { background: var(--noyer); border-color: var(--noyer); color: var(--craie); }
-/* fil laiton qui avance pendant la lecture automatique */
-.etape::after { content: ""; position: absolute; left: 52px; right: 0; bottom: -1px; height: 2px; background: var(--laiton); transform: scaleX(0); transform-origin: left; }
-.atelier.lecture .etape[aria-pressed="true"]::after { transform: scaleX(1); transition: transform var(--duree-etape, 2.6s) linear; }
 
-.atelier-cadre {
-  position: relative; width: min(100%, 400px); margin-inline: auto; aspect-ratio: 2 / 3;
-  border-radius: 200px 200px 16px 16px; overflow: hidden; background: var(--trait);
+/* les 4 étapes : une barre qui se remplit en défilant ; on peut toucher une étape pour y aller */
+.cine-etapes { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.cine-pas { width: 100%; min-height: 44px; display: grid; grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; gap: 6px 7px;
+  background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; font: inherit; color: var(--taupe); }
+.cine-pas-n { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--trait); display: grid; place-items: center;
+  font: 400 .9rem/1 var(--titre); transition: background .3s ease, color .3s ease, border-color .3s ease; }
+.cine-pas-nom { display: none; }  /* téléphone : le titre de l'étape est écrit juste en dessous */
+.cine-pas-barre { grid-column: 1 / -1; height: 2px; background: var(--trait); border-radius: 2px; overflow: hidden; }
+.cine-pas-barre i { display: block; height: 100%; background: var(--laiton); transform-origin: left; transform: scaleX(var(--remplissage, 0)); }
+.cine-pas.actif { color: var(--noyer); }
+.cine-pas.actif .cine-pas-n, .cine-pas.fait .cine-pas-n { background: var(--noyer); border-color: var(--noyer); color: var(--craie); }
+
+/* le texte de l'étape en cours (les autres sont cachés) */
+.cine-textes { display: grid; margin-top: 8px; min-height: 5.6em; }
+.cine-etape { grid-area: 1 / 1; opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .45s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
+.cine-etape.actif { opacity: 1; transform: none; pointer-events: auto; }
+.cine-titre { font: 400 1.25rem/1.2 var(--titre); margin: 0 0 4px; color: var(--noyer); }
+.cine-desc { margin: 0; font-size: .95rem; line-height: 1.5; color: var(--taupe); }
+
+/* l'image : deux cartes en arche dans un espace 3D (la planche, puis la pièce) */
+.cine-visuel { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; gap: 8px; }
+.cine-cadre { position: relative; height: 100%; max-width: 100%; aspect-ratio: 2 / 3; perspective: 1400px; }
+.cine-carte {
+  position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; will-change: transform, opacity;
+  border-radius: 50% 50% 4% 4% / 33.33% 33.33% 2.7% 2.7%;
+  box-shadow: 0 28px 50px -26px rgba(46, 34, 25, .5), 0 2px 6px rgba(46, 34, 25, .08);
+  transform-origin: 50% 100%;
 }
-.couche { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s ease; }
-img.couche { object-fit: cover; }
-.couche-planche { background: #F3E4D8; }  /* fond de la planche (chaque look donne le sien, voir LOOKS_ATELIER) */
-img.couche-planche { object-fit: contain; padding: 22% 6% 4%; }  /* l'arche ne coupe pas les articles */
-.atelier[data-etape="1"] .couche-planche,
-.atelier[data-etape="2"] .couche-decor, .atelier[data-etape="3"] .couche-decor, .atelier[data-etape="4"] .couche-decor,
-.atelier[data-etape="3"] .couche-calque, .atelier[data-etape="4"] .couche-numeros { opacity: 1; }
-.couche-numeros { pointer-events: none; }
-.atelier[data-etape="4"] .couche-numeros { pointer-events: auto; }
-.couche-numeros .pastille { opacity: 0; transform: translate(-50%, -50%) scale(.5); transition: opacity .3s ease, transform .3s ease, background .2s ease; }
-.atelier[data-etape="4"] .couche-numeros .pastille { opacity: 1; transform: translate(-50%, -50%) scale(1); transition-delay: calc(var(--i, 0) * 45ms), calc(var(--i, 0) * 45ms), 0s; }
-.atelier[data-etape="4"] .couche-numeros .pastille.actif, .atelier[data-etape="4"] .couche-numeros .pastille:hover { transform: translate(-50%, -50%) scale(1.12); transition-delay: 0s; }
+.cine-carte img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cine-planche img { object-fit: contain; padding: 22% 6% 4%; box-sizing: border-box; background: #F3E4D8; }
+.cine-decor { opacity: 0; }
+/* trait laiton qui balaie l'image pendant la vérification */
+.cine-balayage { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--laiton);
+  box-shadow: 0 0 14px 3px rgba(233, 220, 195, .9); opacity: 0; pointer-events: none; }
+.couche-calque { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .couche-calque line { stroke: var(--noyer); stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .couche-calque .cote-trait { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.atelier[data-etape="3"] .couche-calque .cote-trait { stroke-dashoffset: 0; transition: stroke-dashoffset 1.1s ease .2s; }
-.couche-calque text { font: 600 3.4px/1 var(--texte); fill: var(--noyer); paint-order: stroke; stroke: var(--craie); stroke-width: .9px; }
+.couche-calque text { font: 600 3.4px/1 var(--texte); fill: var(--noyer); paint-order: stroke; stroke: var(--craie); stroke-width: .9px; opacity: 0; transition: opacity .3s ease; }
+.couche-calque .cote.vu text { opacity: 1; }
+.couche-numeros { position: absolute; inset: 0; }
+.couche-numeros .pastille { opacity: 0; transform: translate(-50%, -50%) scale(.4); pointer-events: none;
+  transition: opacity .25s ease, transform .4s cubic-bezier(.22, 1, .36, 1), background .2s ease; }
+.couche-numeros .pastille.vu { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+.couche-numeros .pastille.actif { background: var(--laiton-texte, #7E5D2B); }
 
-.atelier-article { width: min(100%, 400px); margin: 16px auto 0; min-height: 84px; }
-.atelier-legende { margin: 0; color: var(--taupe); font-size: .98rem; }
-.atelier-fiche { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px; align-items: center; }
-.atelier-fiche img { width: 76px; height: 76px; object-fit: cover; border-radius: 12px; background: var(--craie); }
-.atelier-fiche-nom { font: 400 1.1rem/1.25 var(--titre); margin: 0 0 4px; }
-.atelier-fiche-prix { margin: 0; color: var(--taupe); font-size: .92rem; }
-.atelier-fiche a { color: var(--noyer); font-weight: 600; font-size: .92rem; }
+.atelier-article { width: min(100%, 420px); min-height: 64px; display: grid; align-items: center; }
+.atelier-fiche { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 12px; align-items: center; opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .3s ease; }
+.atelier-fiche.vu { opacity: 1; transform: none; }
+.atelier-fiche img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; background: var(--craie); }
+.atelier-fiche-nom { font: 400 1.02rem/1.25 var(--titre); margin: 0 0 2px; }
+.atelier-fiche-prix { margin: 0; color: var(--taupe); font-size: .88rem; }
+.atelier-fiche a { color: var(--noyer); font-weight: 600; }
+.cine-indice { margin: 0; font-size: .82rem; color: var(--taupe); transition: opacity .3s ease; }
+.cine[data-etape="4"] .cine-indice { opacity: 0; }
+
+@media (min-width: 900px) {
+  .cine { height: calc(100svh + 4 * 70svh); }
+  .cine-scene { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 72px; padding-block: 5svh; }
+  .cine h2 { margin-bottom: 8px; }
+  .cine-etapes { grid-template-columns: none; gap: 0; margin-top: 26px; }
+  .cine-pas { grid-template-columns: 34px minmax(0, 1fr); gap: 4px 14px; padding: 12px 0 0; }
+  .cine-pas-n { width: 34px; height: 34px; font-size: 1.05rem; }
+  .cine-pas-nom { display: block; font: 400 1.2rem/1.2 var(--titre); }
+  .cine-pas-barre { grid-column: 2; margin-top: 10px; }
+  .cine-textes { margin-top: 22px; min-height: 7em; max-width: 46ch; }
+  .cine-titre { display: none; }
+  .cine-desc { font-size: 1.05rem; }
+  .cine-visuel { height: 90svh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cine-etape, .cine-pas-n, .atelier-fiche, .couche-numeros .pastille, .couche-calque text { transition: none !important; }
+}
 
 .criteres { display: grid; gap: 20px 40px; margin: 8px 0 0; }
 @media (min-width: 640px) { .criteres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .criteres div { border-top: 1px solid var(--trait); padding-top: 14px; }
 .criteres dt { font: 400 1.2rem/1.2 var(--titre); margin: 0 0 4px; }
 .criteres dd { margin: 0; color: var(--taupe); }
-@media (prefers-reduced-motion: reduce) {
-  .couche, .couche-numeros .pastille, .etape-n, .etape-titre { transition: none !important; }
-  .atelier[data-etape="3"] .couche-calque .cote-trait { transition: none; }
+
+/* ---------- Accueil : bandeau d'introduction (09/11/2026, en test) ---------- */
+.intro { display: grid; gap: 18px; padding: 22px 0 40px; border-bottom: 1px solid var(--trait); grid-template-areas: "titre" "scene" "texte"; }
+.intro h1 { grid-area: titre; } .intro-scene { grid-area: scene; } .intro-texte { grid-area: texte; }
+.intro h1 { font: 400 clamp(2.1rem, 6.4vw, 4rem)/1.05 var(--titre); margin: 0; letter-spacing: -.01em; text-wrap: balance; max-width: 16ch; }
+.intro-chapo { margin: 0; color: var(--taupe); font-size: 1.08rem; max-width: 46ch; }
+.intro-temps { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 10px; }
+.intro-temps li { display: flex; align-items: center; gap: 12px; font-size: .98rem; }
+.intro-temps span { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--noyer); color: var(--craie);
+  display: grid; place-items: center; font: 400 1rem/1 var(--titre); }
+.intro-action { margin: 24px 0 0; }
+.intro-bouton { padding: 14px 24px; font-size: 1rem; }
+.intro-scene { position: relative; height: clamp(320px, 48svh, 580px); perspective: 1600px; overflow: hidden; }
+.intro-arches { position: absolute; inset: 0; transform-style: preserve-3d; }
+.intro-arche {
+  position: absolute; left: 50%; top: 47%; height: 86%; aspect-ratio: 2 / 3; overflow: hidden; display: block;
+  border-radius: 50% 50% 4% 4% / 33.33% 33.33% 2.7% 2.7%; background: var(--trait);
+  box-shadow: 0 18px 30px -20px rgba(46, 34, 25, .5);
+  transform: translate(-50%, -50%) scale(.9); transition: transform 1s cubic-bezier(.2, .8, .2, 1), filter .8s ease, opacity .6s ease;
 }
+.intro-arche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.intro-bulle { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; pointer-events: none;
+  opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; z-index: 30; }
+.intro-bulle.vu { opacity: 1; transform: none; }
+.intro-bulle-n { width: 30px; height: 30px; border-radius: 50%; background: var(--noyer); color: var(--craie); display: grid; place-items: center;
+  font: 600 .85rem/1 var(--texte); box-shadow: 0 0 0 5px rgba(242, 236, 227, .55); }
+.intro-bulle-txt { background: var(--craie); border-radius: 12px; padding: 7px 11px; box-shadow: 0 10px 24px -12px rgba(46, 34, 25, .45);
+  display: grid; max-width: 190px; }
+.intro-bulle-nom { font: 400 .9rem/1.2 var(--titre); color: var(--noyer); }
+.intro-bulle-prix { font-size: .78rem; color: var(--taupe); }
+.accueil-h { font: 400 clamp(1.9rem, 5vw, 3rem)/1.05 var(--titre); margin: 0 0 14px; letter-spacing: -.01em; }
+@media (min-width: 900px) {
+  .intro { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-rows: auto 1fr; grid-template-areas: "titre scene" "texte scene"; align-items: end; gap: 18px 40px; padding: 40px 0 56px; }
+  .intro-texte { align-self: start; }
+  .intro-scene { height: clamp(440px, 64svh, 620px); align-self: center; }
+}
+@media (prefers-reduced-motion: reduce) { .intro-arche, .intro-bulle { transition: none; } }
+
+/* Accessibilité (09/11/2026, revue UI/UX Pro Max) : lien « Aller au contenu », visible seulement au clavier */
+.aller-contenu { position: absolute; left: 16px; top: -60px; z-index: 1000; background: var(--noyer); color: var(--craie);
+  padding: 10px 16px; border-radius: 999px; font-weight: 600; text-decoration: none; transition: top .2s ease; }
+.aller-contenu:focus { top: 12px; }
+main:focus { outline: none; }
 

@@ -870,80 +870,182 @@
         requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.remove('entre'); }); });
       }, 350);
     }
-    setInterval(tourner, 6000);
+    // les idées s'arrêtent de changer après 10 changements (environ 1 minute) : pas de mouvement sans fin
+    var tours = 0, rotation = setInterval(function () { if (++tours > 10) { clearInterval(rotation); return; } tourner(); }, 6000);
   }
 
 
-  /* ---------- Page À propos : « Comment naît un look » (09/11/2026) ----------
-     4 étapes sur le même cadre : les articles (planche), la pièce (décor), la vérification (calque), les numéros.
-     Le look change à chaque visite (jamais deux fois de suite le même, mémorisé sur l'appareil, clé « am_atelier »)
-     et le bouton « Un autre exemple » passe au suivant. À l'arrivée sur la section, les étapes défilent une fois. */
+  /* ---------- Page À propos : « Comment naît un look » en cinématique (09/11/2026, en test) ----------
+     La scène est collée en haut de l'écran ; le défilement de la page fait avancer une valeur p de 0 à 4 :
+     0→1 la planche couchée se redresse, 1→2 elle pivote et laisse place à la pièce, 2→3 le calque se trace,
+     3→4 les numéros apparaissent un par un. Toucher une étape fait défiler jusqu'à elle.
+     Le look change à chaque visite (jamais deux fois de suite le même, clé « am_atelier ») ; « Un autre exemple » passe au suivant. */
   function demoAtelier() {
-    var s = document.querySelector('.atelier[data-atelier]');
+    var s = document.querySelector('.cine[data-atelier]');
     if (!s) return;
     var d; try { d = JSON.parse(s.getAttribute('data-atelier')); } catch (e) { return; }
     var V = d.variantes || []; if (!V.length) return;
-    var boutons = [].slice.call(s.querySelectorAll('.etape')), zone = s.querySelector('.atelier-article');
-    var couche = s.querySelector('.couche-numeros'), planche = s.querySelector('.couche-planche'), decor = s.querySelector('.couche-decor');
-    var calque = s.querySelector('.couche-calque'), lienLook = s.querySelector('.atelier-lien'), autre = s.querySelector('.atelier-autre');
-    var v = null, iv = 0, choisi = 1, minuteur = null, lecture = false, etape = 4;
+    var pas = [].slice.call(s.querySelectorAll('.cine-pas')), textes = [].slice.call(s.querySelectorAll('.cine-etape'));
+    var planche = s.querySelector('.cine-planche'), decor = s.querySelector('.cine-decor');
+    var imgP = planche.querySelector('img'), imgD = decor.querySelector('img'), calque = s.querySelector('.couche-calque');
+    var couche = s.querySelector('.couche-numeros'), balai = s.querySelector('.cine-balayage'), zone = s.querySelector('.atelier-article');
+    var lienLook = s.querySelector('.atelier-lien'), autre = s.querySelector('.atelier-autre');
+    var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false;
     function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
+    function adoucir(t) { return 1 - Math.pow(1 - t, 3); }  // départ vif, arrivée douce
+    function fiche() {
+      var a = v.articles[choisi - 1];
+      zone.innerHTML = '<div class="atelier-fiche"><img src="' + RACINE + echap(a.img) + '" alt="" width="60" height="60">'
+        + '<div><p class="atelier-fiche-nom">' + a.n + '. ' + echap(a.nom) + '</p>'
+        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(v.lien) + '#article-' + a.n + '">Voir l\'article</a></p></div></div>';
+      [].forEach.call(couche.children, function (b, i) { b.classList.toggle('actif', i + 1 === choisi); });
+    }
     function charger(k) {
-      iv = (k + V.length) % V.length; v = V[iv]; choisi = 1;
+      iv = (k + V.length) % V.length; v = V[iv]; choisi = 1; choixManuel = false;
       try { localStorage.setItem('am_atelier', v.look); } catch (e) {}
-      planche.src = RACINE + v.planche; planche.style.background = v.fond;
-      decor.src = RACINE + v.image; decor.alt = v.alt;
+      imgP.src = RACINE + v.planche; imgP.style.background = v.fond;
+      imgD.src = RACINE + v.image; imgD.alt = v.alt;
       calque.innerHTML = v.calque;
       if (lienLook) { lienLook.href = RACINE + v.lien; lienLook.textContent = v.titre; }
-      couche.innerHTML = '';
-      v.articles.forEach(function (a, i) {
+      couche.innerHTML = ''; zone.innerHTML = '';
+      v.articles.forEach(function (a) {
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'pastille'; b.textContent = a.n;
-        b.style.left = a.pos[0] + '%'; b.style.top = a.pos[1] + '%'; b.style.setProperty('--i', i);
+        b.style.left = a.pos[0] + '%'; b.style.top = a.pos[1] + '%';
         b.setAttribute('aria-label', 'Article ' + a.n + ' : ' + a.nom);
-        b.addEventListener('click', function () { arreter(); choisi = a.n; aller(4); });
+        b.addEventListener('click', function () { choisi = a.n; choixManuel = true; fiche(); var f = zone.firstChild; if (f) f.classList.add('vu'); });
         couche.appendChild(b);
       });
+      etape = 0; dessiner();
     }
-    function aller(k) {
-      etape = k; s.setAttribute('data-etape', k);
-      boutons.forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.etape === k ? 'true' : 'false'); });
-      [].forEach.call(couche.children, function (p, i) { p.classList.toggle('actif', k === 4 && i + 1 === choisi); });
-      if (k < 4) { zone.innerHTML = '<p class="atelier-legende">' + echap(v.legendes[k - 1]) + '</p>'; return; }
-      var a = v.articles[choisi - 1];
-      zone.innerHTML = '<div class="atelier-fiche"><img src="' + RACINE + echap(a.img) + '" alt="" width="76" height="76">'
-        + '<div><p class="atelier-fiche-nom">' + a.n + '. ' + echap(a.nom) + '</p>'
-        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(v.lien) + '#article-' + a.n + '">Voir l\'article dans le look</a></p></div></div>';
+    // position dans la section : p de 0 à 4
+    function progres() {
+      var r = s.getBoundingClientRect(), h = window.innerHeight, seg = (s.offsetHeight - h) / 4;
+      return borne(-r.top / seg, 0, 3.999);
     }
-    function arreter() { lecture = false; s.classList.remove('lecture'); clearTimeout(minuteur); }
-    function lire(k) {
-      aller(k); if (k >= 4) { arreter(); return; }
-      minuteur = setTimeout(function () { if (lecture) lire(k + 1); }, 2600);
+    function dessiner() {
+      attente = false;
+      var p = RM ? Math.floor(progres()) + .999 : progres();
+      var k = Math.floor(p) + 1;
+      // 1. la planche se redresse (0→0,7), puis pivote et s'efface (1→1,8)
+      var lever = adoucir(borne(p / .7, 0, 1)), tour = adoucir(borne((p - 1) / .8, 0, 1));
+      planche.style.transform = 'translateY(' + ((1 - lever) * 10) + '%) rotateX(' + ((1 - lever) * 58) + 'deg) rotateY(' + (-tour * 100) + 'deg) scale(' + (.88 + lever * .12) + ')';
+      planche.style.opacity = tour < .55 ? 1 : borne(1 - (tour - .55) / .45, 0, 1);
+      // 2. la pièce arrive de l'autre côté
+      var arrivee = adoucir(borne((p - 1.15) / .75, 0, 1));
+      decor.style.transform = 'rotateY(' + ((1 - arrivee) * 100) + 'deg) scale(' + (1 + (p > 2 && p < 3.2 ? .025 : 0)) + ')';
+      decor.style.opacity = p < 1.15 ? 0 : borne(arrivee * 2, 0, 1);
+      // 3. le calque se trace et un trait laiton balaie l'image
+      var trace = borne((p - 2.1) / .6, 0, 1);
+      [].forEach.call(calque.querySelectorAll('.cote'), function (g, i) {
+        var t = borne(trace * 2 - i * .6, 0, 1);
+        var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 1 - t;
+        g.classList.toggle('vu', t > .95);
+        g.style.opacity = p > 3.6 ? borne(1 - (p - 3.6) / .3, .0, 1) : 1;
+      });
+      var bal = borne((p - 2) / .9, 0, 1);
+      balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translateY(' + (bal * (decor.offsetHeight - 2)) + 'px)';
+      // 4. les numéros apparaissent un par un
+      var n = v.articles.length, montres = Math.round(borne((p - 3) / .6, 0, 1) * n);
+      [].forEach.call(couche.children, function (b, i) { b.classList.toggle('vu', i < montres); });
+      if (montres >= n && !choixManuel) { choisi = 1; }
+      if (k !== etape) {
+        etape = k; s.setAttribute('data-etape', k);
+        textes.forEach(function (t) { t.classList.toggle('actif', +t.dataset.etape === k); });
+        if (k === 4) { fiche(); } else { zone.innerHTML = ''; }
+      }
+      if (k === 4) { var f = zone.firstChild; if (f) f.classList.toggle('vu', montres >= Math.min(n, 3)); }
+      pas.forEach(function (b, i) {
+        b.classList.toggle('actif', i + 1 === k); b.classList.toggle('fait', i + 1 < k);
+        b.querySelector('i').style.setProperty('--remplissage', borne(p - i, 0, 1));
+      });
     }
-    function jouer() {
-      if (RM) { aller(4); return; }
-      arreter(); lecture = true; s.classList.add('lecture'); lire(1);
-    }
-    // choix du look de cette visite : au hasard, mais jamais celui de la visite précédente
+    function demander() { if (!attente) { attente = true; requestAnimationFrame(dessiner); } }
+    window.addEventListener('scroll', demander, { passive: true });
+    window.addEventListener('resize', demander);
+    pas.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = +b.dataset.etape, h = window.innerHeight, seg = (s.offsetHeight - h) / 4;
+        var y = window.scrollY + s.getBoundingClientRect().top + (k - 1 + (k === 4 ? .85 : .75)) * seg;
+        window.scrollTo({ top: y, behavior: RM ? 'auto' : 'smooth' });
+      });
+    });
+    if (autre) autre.addEventListener('click', function () { charger(iv + 1); });
+    // look de cette visite : au hasard, jamais celui de la visite précédente
     var dernier = null; try { dernier = localStorage.getItem('am_atelier'); } catch (e) {}
     var possibles = V.map(function (x, k) { return k; }).filter(function (k) { return V.length < 2 || V[k].look !== dernier; });
     charger(possibles[Math.floor(Math.random() * possibles.length)]);
-    boutons.forEach(function (b) { b.addEventListener('click', function () { arreter(); aller(+b.dataset.etape); }); });
-    if (autre) autre.addEventListener('click', function () {
-      // fondu rapide, puis le look suivant rejoue ses étapes
-      s.classList.add('change');
-      setTimeout(function () { charger(iv + 1); s.classList.remove('change'); jouer(); }, RM ? 0 : 280);
+  }
+
+  /* ---------- Accueil : bandeau d'introduction (09/11/2026, en test) ----------
+     Arches des 5 derniers looks en éventail 3D ; sur l'arche de devant, 3 numéros s'allument l'un après l'autre
+     avec l'article et son prix, puis l'éventail tourne vers le look suivant. Pause au survol ou au toucher ;
+     arrêt après 2 tours ; rien ne bouge si l'appareil demande moins d'animations. */
+  function introAccueil() {
+    var s = document.querySelector('.intro[data-intro]');
+    if (!s) return;
+    var d; try { d = JSON.parse(s.getAttribute('data-intro')); } catch (e) { return; }
+    var arches = [].slice.call(s.querySelectorAll('.intro-arche')), scene = s.querySelector('.intro-scene');
+    var bulle = s.querySelector('.intro-bulle'), bN = s.querySelector('.intro-bulle-n'), bNom = s.querySelector('.intro-bulle-nom'), bPrix = s.querySelector('.intro-bulle-prix');
+    var avant = 0, num = 0, pause = false, tours = 0, minuteur = null, n = arches.length;
+    function placer() {
+      var etroit = scene.offsetWidth < 600;
+      arches.forEach(function (a, i) {
+        var o = ((i - avant + n + Math.floor(n / 2)) % n) - Math.floor(n / 2);  // -2 … 2
+        var ab = Math.abs(o);
+        a.style.transform = 'translate(-50%, -50%) translateX(' + (o * (etroit ? 46 : 40)) + '%) translateZ(' + (-ab * 150) + 'px) rotateY(' + (-o * 24) + 'deg)';
+        a.style.zIndex = 10 - ab; a.style.filter = 'brightness(' + (1 - ab * .1) + ') saturate(' + (1 - ab * .15) + ')';
+        a.style.opacity = ab > 2 ? 0 : 1;
+      });
+    }
+    function montrerNumero() {
+      var look = d[avant], x = look.numeros[num];
+      if (!x) return;
+      var carte = arches[avant].getBoundingClientRect(), base = scene.getBoundingClientRect();
+      var px = carte.left - base.left + carte.width * x.pos[0] / 100, py = carte.top - base.top + carte.height * x.pos[1] / 100;
+      bN.textContent = x.n; bNom.textContent = x.nom.length > 46 ? x.nom.slice(0, 44) + '…' : x.nom; bPrix.textContent = x.prix;
+      // la bulle part du numéro, vers l'intérieur de la scène
+      var droite = px > base.width * .55;
+      bulle.style.flexDirection = droite ? 'row-reverse' : 'row';
+      var largeur = bulle.offsetWidth || 220;
+      var gx = droite ? px - largeur + 15 : px - 15;
+      bulle.style.left = borne(gx, 6, base.width - largeur - 6) + 'px'; bulle.style.top = borne(py - 15, 6, base.height - 50) + 'px';
+      bulle.classList.add('vu');
+    }
+    function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
+    function suivant() {
+      if (pause || document.hidden) { minuteur = setTimeout(suivant, 1200); return; }
+      num++;
+      if (num >= d[avant].numeros.length) {
+        num = 0; bulle.classList.remove('vu');
+        avant = (avant + 1) % n; if (avant === 0) tours++;
+        if (tours >= 2) { placer(); setTimeout(montrerNumero, 1000); return; }  // fin : le dernier état reste à l'écran
+        placer(); minuteur = setTimeout(function () { montrerNumero(); minuteur = setTimeout(suivant, 2600); }, 1100);
+        return;
+      }
+      bulle.classList.remove('vu');
+      setTimeout(montrerNumero, 260);
+      minuteur = setTimeout(suivant, 2600);
+    }
+    arches.forEach(function (a, i) {
+      a.addEventListener('click', function (ev) { if (i !== avant) { ev.preventDefault(); avant = i; num = 0; bulle.classList.remove('vu'); placer(); setTimeout(montrerNumero, 900); } });
     });
-    aller(4);  // la page est complète au repos : la pièce et ses numéros
-    if (RM || !('IntersectionObserver' in window)) return;
-    var vu = false, obs = new IntersectionObserver(function (es) {
-      es.forEach(function (en) { if (en.isIntersecting && !vu) { vu = true; obs.disconnect(); jouer(); } });
-    }, { threshold: .45 });
-    obs.observe(s.querySelector('.atelier-cadre'));
+    scene.addEventListener('mouseenter', function () { pause = true; });
+    scene.addEventListener('mouseleave', function () { pause = false; });
+    scene.addEventListener('touchstart', function () { pause = true; setTimeout(function () { pause = false; }, 8000); }, { passive: true });
+    window.addEventListener('resize', function () { placer(); if (bulle.classList.contains('vu')) montrerNumero(); });
+    // le bouton « Commencer à s'inspirer » descend en douceur jusqu'aux looks
+    var b = s.querySelector('.intro-bouton'), cible = document.getElementById('les-looks');
+    if (b && cible) b.addEventListener('click', function (ev) { ev.preventDefault(); cible.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }); });
+    // entrée : les arches partent d'une pile et s'ouvrent en éventail (le seul grand mouvement de la page)
+    if (RM) { placer(); montrerNumero(); return; }
+    requestAnimationFrame(function () { requestAnimationFrame(function () { placer(); }); });
+    setTimeout(function () { montrerNumero(); minuteur = setTimeout(suivant, 2600); }, 1300);
   }
 
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil();
     // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
     var ordre = document.getElementById('looks-ordre');
     if (ordre && document.querySelector('.look')) {
