@@ -766,8 +766,80 @@
     });
   }
 
+
+  /* ---------- Idées sous la recherche, qui changent toutes seules (08/11/2026) ----------
+     Au chargement : 4 idées tirées au hasard, en favorisant les pièces que le visiteur a déjà regardées
+     (mémorisées sur cet appareil seulement, clé « am_gouts ») et Noël en novembre-décembre.
+     Ensuite, une idée est remplacée toutes les 6 secondes (fondu), et après 40 secondes le titre devient
+     « Et pourquoi pas… » avec des idées pas encore montrées. Pause quand on survole, quand le champ est actif
+     ou quand l'onglet est caché. */
+  function lireGouts() { try { return JSON.parse(localStorage.getItem('am_gouts') || '{}') || {}; } catch (e) { return {}; } }
+  function noterGouts(cats) {
+    try { var g = lireGouts(); cats.forEach(function (c) { g[c] = Math.min(20, (g[c] || 0) + 1); }); localStorage.setItem('am_gouts', JSON.stringify(g)); } catch (e) {}
+  }
+  function ideesVivantes() {
+    var bloc = document.querySelector('.idees[data-idees]');
+    if (!bloc) return;
+    var liste = bloc.querySelector('.idees-liste'), titre = bloc.querySelector('.idees-titre');
+    var pool; try { pool = JSON.parse(bloc.getAttribute('data-idees')); } catch (e) { return; }
+    if (!liste || !pool || pool.length < 5) return;
+    var gouts = lireGouts(), mois = new Date().getMonth(), saison = mois === 10 || mois === 11;
+    var vues = {}, debut = Date.now(), pause = false, place = 0;
+    function poids(x) {
+      var p = 1;
+      (x.cats || []).forEach(function (c) { p += Math.min(4, gouts[c] || 0) * .8; });
+      if (saison && x.saison) p += 1.5;
+      if (Date.now() - debut > 40000 && !vues[x.q]) p += 3;  // après un moment : des idées nouvelles
+      return p;
+    }
+    function tirer(exclus) {
+      var choix = pool.filter(function (x) { return exclus.indexOf(x.q) < 0; });
+      if (!choix.length) return null;
+      var total = 0; choix.forEach(function (x) { total += poids(x); });
+      var r = Math.random() * total;
+      for (var i = 0; i < choix.length; i++) { r -= poids(choix[i]); if (r <= 0) return choix[i]; }
+      return choix[choix.length - 1];
+    }
+    function bouton(x) {
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; b.textContent = x.q; vues[x.q] = 1; return b;
+    }
+    // premier tirage
+    var montres = [];
+    for (var k = 0; k < 4; k++) { var x = tirer(montres); if (x) montres.push(x.q); }
+    liste.innerHTML = '';
+    montres.forEach(function (q) { liste.appendChild(bouton(pool.filter(function (x) { return x.q === q; })[0])); });
+    if (RM) return;  // mouvements réduits : pas de rotation automatique
+    bloc.addEventListener('mouseenter', function () { pause = true; });
+    bloc.addEventListener('mouseleave', function () { pause = false; });
+    var champ = bloc.parentNode.querySelector('input');
+    function tourner() {
+      if (pause || document.hidden || (champ && document.activeElement === champ) || bloc.contains(document.activeElement)) return;
+      if (titre && Date.now() - debut > 40000 && titre.textContent !== 'Et pourquoi pas…') {
+        titre.classList.add('sort'); setTimeout(function () { titre.textContent = 'Et pourquoi pas…'; titre.classList.remove('sort'); }, 350);
+      }
+      var actuels = [].map.call(liste.children, function (b) { return b.dataset.q; });
+      var x = tirer(actuels); if (!x) return;
+      var vieux = liste.children[place % liste.children.length]; place++;
+      if (!vieux) return;
+      vieux.classList.add('sort');
+      setTimeout(function () {
+        var b = bouton(x); b.classList.add('entre'); liste.replaceChild(b, vieux);
+        requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.remove('entre'); }); });
+      }, 350);
+    }
+    setInterval(tourner, 6000);
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes();
+    // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
+    var ordre = document.getElementById('looks-ordre');
+    if (ordre && document.querySelector('.look')) {
+      try {
+        var dd = JSON.parse(ordre.textContent), idl = location.pathname.split('/').pop().replace(/\.html$/, '');
+        dd.looks.forEach(function (l) { if (l.id === idl) noterGouts(l.cats); });
+      } catch (e) {}
+    }
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
     carrousel();

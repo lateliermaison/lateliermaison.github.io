@@ -338,6 +338,12 @@ html.menu-actif { overflow: hidden; }
   text-decoration: underline; text-decoration-color: var(--laiton-clair); text-underline-offset: 3px;
 }
 .idees button:hover { text-decoration-color: var(--laiton); }
+.idees-liste { display: contents; }
+.idees { min-height: 3.5em; align-content: flex-start; }  /* 2 lignes réservées : pas de saut quand les idées changent */
+.idees-titre, .idees button { transition: opacity .35s ease, transform .35s ease; }
+.idees-titre.sort, .idees button.sort { opacity: 0; transform: translateY(-4px); }
+.idees button.entre { opacity: 0; transform: translateY(4px); }
+@media (prefers-reduced-motion: reduce) { .idees-titre, .idees button { transition: none; } }
 
 /* Liste des suggestions */
 .recherche-resultats {
