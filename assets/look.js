@@ -596,6 +596,12 @@
     var exacte = INDEX.pieces.filter(function (p) { return p._phrases.indexOf(nt) >= 0; })[0];
     var looks = INDEX.looks.map(function (l) { return { l: l, sc: noter(l._m, q) }; })
       .filter(function (x) { return x.sc >= 1.6 * q.length && (!exacte || x.l.cats.indexOf(exacte.id) >= 0); }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+    // thème connu (« sapin », « sapin de Noël »…) : la liste des looks vient des règles du site (build.py), pas d'un mot isolé
+    var theme = (INDEX.themes || []).filter(function (t) { return t.alias.indexOf(nt) >= 0; })[0];
+    if (theme) looks = theme.ids.map(function (id) {
+      var l = INDEX.looks.filter(function (x) { return x.id === id; })[0];
+      return l ? { l: l, sc: noter(l._m, q) || 1 } : null;
+    }).filter(Boolean).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
     var articles = [];
     INDEX.looks.forEach(function (l) { l._articles.forEach(function (a) { var sc = noter(a._m, q); if (sc >= 2.4 * q.length) articles.push({ a: a, sc: sc }); }); });
     articles.sort(function (a, b) { return b.sc - a.sc; });
@@ -745,10 +751,16 @@
     /* Clic sur une idée (08/11/2026) : sur l'accueil, la grille se filtre tout de suite, à chaque clic.
        Une pièce (Salle de bain, Noël…) -> même effet que la barre des pièces ; un thème (Doré, Velours…) -> les looks trouvés. */
     var ideeEnCours = 0;
-    function choisirIdee(q, piece) {
+    function choisirIdee(q, piece, ids) {
       var tour = ++ideeEnCours;
       clearTimeout(minuteurCompte); compterRecherche(q);
       afficher('');
+      // thème : la liste exacte des looks est calculée à la construction du site (build.py, THEMES_IDEES)
+      if (surAccueil && ids && ids.length && filtrerRecherche) {
+        input.value = q; if (effacer) effacer.hidden = false; input.blur();
+        filtrerRecherche(ids, q);
+        return;
+      }
       if (surAccueil && piece && appliquerFiltre) {
         input.value = ''; if (effacer) effacer.hidden = true; input.blur();
         appliquerFiltre(piece, null, true);
@@ -768,7 +780,7 @@
     }
     if (idees) idees.addEventListener('click', function (ev) {
       var b = ev.target.closest('button[data-q]'); if (!b) return;
-      ev.preventDefault(); choisirIdee(b.dataset.q, b.dataset.piece || '');
+      ev.preventDefault(); choisirIdee(b.dataset.q, b.dataset.piece || '', (b.dataset.ids || '').split(' ').filter(Boolean));
     });
     return input;
   }
@@ -830,7 +842,7 @@
       return choix[choix.length - 1];
     }
     function bouton(x) {
-      var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; if (x.piece) b.dataset.piece = x.piece; b.textContent = x.q; vues[x.q] = 1; return b;
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; if (x.piece) b.dataset.piece = x.piece; if (x.ids) b.dataset.ids = x.ids.join(' '); b.textContent = x.q; vues[x.q] = 1; return b;
     }
     // premier tirage
     var montres = [];
