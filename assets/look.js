@@ -521,7 +521,7 @@
     var max = q.length <= 2 ? 0 : q.length <= 5 ? 1 : q.length <= 8 ? 2 : 3;
     if (!max || (q.length === 3 && (t.length < 4 || t[0] !== q[0]))) return 0;
     var dd = distance(q, t, max);
-    if (dd > 1 && t[0] !== q[0]) return 0;
+    if ((dd > 1 || q.length <= 5) && dd > 0 && t[0] !== q[0] && !(dd === 1 && q.length === t.length && q[0] === t[1] && q[1] === t[0])) return 0;
     if (dd <= max) return .86 - .12 * dd;
     if (q.length >= 4 && t.length > q.length) {  // début de mot avec une faute (« balk » -> « balcon »)
       dd = distance(q, t.slice(0, q.length), 1);
@@ -593,8 +593,9 @@
       })) sc += 4;
       return { p: p, sc: sc };
     }).filter(function (x) { return x.sc >= 2.2; }).sort(function (a, b) { return b.sc - a.sc; });
+    var exacte = INDEX.pieces.filter(function (p) { return p._phrases.indexOf(nt) >= 0; })[0];
     var looks = INDEX.looks.map(function (l) { return { l: l, sc: noter(l._m, q) }; })
-      .filter(function (x) { return x.sc >= 1.6 * q.length; }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+      .filter(function (x) { return x.sc >= 1.6 * q.length && (!exacte || x.l.cats.indexOf(exacte.id) >= 0); }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
     var articles = [];
     INDEX.looks.forEach(function (l) { l._articles.forEach(function (a) { var sc = noter(a._m, q); if (sc >= 2.4 * q.length) articles.push({ a: a, sc: sc }); }); });
     articles.sort(function (a, b) { return b.sc - a.sc; });
@@ -738,9 +739,37 @@
     });
     liste.addEventListener('mousemove', function (ev) { var o = ev.target.closest('.rs-option'); if (o) selection(options.indexOf(o)); });
     if (effacer) effacer.addEventListener('click', function () { input.value = ''; input.focus(); rendre(); });
-    if (!dansPanneau) document.addEventListener('click', function (ev) { if (!bloc.contains(ev.target)) afficher(''); });
     var idees = bloc.parentNode.querySelector('.idees');
-    if (idees) idees.addEventListener('click', function (ev) { var b = ev.target.closest('button[data-q]'); if (b) { input.value = b.dataset.q; input.focus(); rendre(); } });
+    // un clic hors de la barre ferme la liste, sauf un clic sur une idée (08/11/2026 : la liste se refermait aussitôt)
+    if (!dansPanneau) document.addEventListener('click', function (ev) { if (!bloc.contains(ev.target) && !(idees && idees.contains(ev.target))) afficher(''); });
+    /* Clic sur une idée (08/11/2026) : sur l'accueil, la grille se filtre tout de suite, à chaque clic.
+       Une pièce (Salle de bain, Noël…) -> même effet que la barre des pièces ; un thème (Doré, Velours…) -> les looks trouvés. */
+    var ideeEnCours = 0;
+    function choisirIdee(q, piece) {
+      var tour = ++ideeEnCours;
+      clearTimeout(minuteurCompte); compterRecherche(q);
+      afficher('');
+      if (surAccueil && piece && appliquerFiltre) {
+        input.value = ''; if (effacer) effacer.hidden = true; input.blur();
+        appliquerFiltre(piece, null, true);
+        return;
+      }
+      input.value = q; if (effacer) effacer.hidden = false;
+      charger_index().then(function (d) {
+        if (tour !== ideeEnCours) return;  // un autre clic est arrivé entre-temps
+        var r = d ? chercher(q) : null, ids = r ? r.looks.map(function (x) { return x.l.id; }) : [];
+        // un thème présent seulement dans des articles (« Velours ») : on montre aussi les looks de ces articles
+        if (r) INDEX.looks.forEach(function (l) {
+          if (ids.indexOf(l.id) < 0 && l._articles.some(function (a) { return noter(a._m, r.q) >= 2.4 * r.q.length; })) ids.push(l.id);
+        });
+        if (surAccueil && filtrerRecherche && ids.length) { input.blur(); filtrerRecherche(ids, q); }
+        else { input.focus(); rendre(); }
+      });
+    }
+    if (idees) idees.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-q]'); if (!b) return;
+      ev.preventDefault(); choisirIdee(b.dataset.q, b.dataset.piece || '');
+    });
     return input;
   }
   var LOUPE_MINI = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.4 15.4 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -801,7 +830,7 @@
       return choix[choix.length - 1];
     }
     function bouton(x) {
-      var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; b.textContent = x.q; vues[x.q] = 1; return b;
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; if (x.piece) b.dataset.piece = x.piece; b.textContent = x.q; vues[x.q] = 1; return b;
     }
     // premier tirage
     var montres = [];
@@ -811,9 +840,11 @@
     if (RM) return;  // mouvements réduits : pas de rotation automatique
     bloc.addEventListener('mouseenter', function () { pause = true; });
     bloc.addEventListener('mouseleave', function () { pause = false; });
+    var calme = 0;  // après un toucher ou un clic, les idées ne bougent plus pendant 15 s (le doigt ne tombe pas sur une autre)
+    bloc.addEventListener('pointerdown', function () { calme = Date.now(); });
     var champ = bloc.parentNode.querySelector('input');
     function tourner() {
-      if (pause || document.hidden || (champ && document.activeElement === champ) || bloc.contains(document.activeElement)) return;
+      if (pause || Date.now() - calme < 15000 || document.hidden || (champ && document.activeElement === champ) || bloc.contains(document.activeElement)) return;
       if (titre && Date.now() - debut > 40000 && titre.textContent !== 'Et pourquoi pas…') {
         titre.classList.add('sort'); setTimeout(function () { titre.textContent = 'Et pourquoi pas…'; titre.classList.remove('sort'); }, 350);
       }
