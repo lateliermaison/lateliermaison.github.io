@@ -426,8 +426,63 @@ html.recherche-active { overflow: hidden; }
 }
 
 /* ---------- Page À propos (09/11/2026) : démonstration « Comment naît un look » ---------- */
-.apropos { display: grid; gap: 64px; padding: 28px 0 80px; }
-.apropos-tete { max-width: 62ch; }
+.apropos { display: grid; gap: 40px; padding: 28px 0 80px; }
+@media (min-width: 900px) { .apropos { gap: 56px; } }
+.apropos-tete { display: grid; gap: 28px; }
+.apropos-intro { max-width: 62ch; }
+/* chiffres de l'atelier (calculés à la construction du site) */
+.apropos-chiffres { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 14px 28px; margin: 26px 0 0; }
+.apropos-chiffres div { display: flex; flex-direction: column; }
+.apropos-chiffres dd { order: -1; }
+.apropos-chiffres dd { margin: 0; font: 400 clamp(2rem, 5vw, 2.8rem)/1 var(--titre); color: var(--noyer); }
+.apropos-chiffres dt { margin-top: 6px; font-size: .85rem; line-height: 1.3; color: var(--taupe); max-width: 11ch; }
+/* mur d'arches : tous les looks qui défilent doucement (rangée sur téléphone, 3 colonnes sur ordinateur) */
+.mur { position: relative; min-width: 0; padding-bottom: 34px; }
+.mur-arche { display: block; flex: none; overflow: hidden; border-radius: 50% 50% 7% 7% / 33.33% 33.33% 4.7% 4.7%; background: var(--trait);
+  box-shadow: 0 14px 26px -18px rgba(46, 34, 25, .5); transition: transform .35s ease; }
+.mur-arche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mur-arche:hover { transform: translateY(-4px); }
+.mur-cols { display: none; }
+.mur-rang { overflow: hidden; margin-inline: -16px; padding: 6px 0 14px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.mur-rang .mur-piste { display: flex; gap: 12px; width: max-content; padding-left: 12px; animation: mur-x var(--duree, 60s) linear infinite; }
+.mur-rang .mur-arche { width: 104px; height: 156px; }
+@keyframes mur-x { to { transform: translateX(-50%); } }
+@keyframes mur-y { to { transform: translateY(-50%); } }
+.mur:hover .mur-piste, .mur.pause .mur-piste, .mur.touche .mur-piste, .mur:focus-within .mur-piste { animation-play-state: paused; }
+.mur-pause { position: absolute; right: 0; bottom: -6px; z-index: 2; width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--taupe);
+  cursor: pointer; display: grid; place-items: center; padding: 0; }
+.mur-pause span { width: 10px; height: 12px; border-left: 3px solid currentColor; border-right: 3px solid currentColor; }
+.mur.pause .mur-pause span { width: 0; height: 0; border: solid transparent; border-width: 6px 0 6px 10px; border-left-color: currentColor; }
+.mur-pause:hover { color: var(--noyer); }
+@media (min-width: 900px) {
+  .apropos-tete { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr); gap: 56px; align-items: center; }
+  .mur-rang { display: none; }
+  .mur-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; height: 540px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
+  .mur-col .mur-piste { display: grid; gap: 14px; padding-bottom: 14px; animation: mur-y var(--duree, 50s) linear infinite; }
+  .mur-col:nth-child(2) .mur-piste { animation-direction: reverse; }
+  .mur-col .mur-arche { width: 100%; aspect-ratio: 2 / 3; }
+  .mur-pause { bottom: -8px; }
+}
+/* mouvement réduit : le mur ne bouge pas ; sur téléphone on peut le faire défiler au doigt */
+@media (prefers-reduced-motion: reduce) {
+  .mur-piste { animation: none !important; }
+  .mur-rang { overflow-x: auto; scrollbar-width: none; }
+  .mur-rang::-webkit-scrollbar { display: none; }
+  .mur-pause { display: none; }
+}
+/* sélecteur d'exemples de « Comment naît un look » (une petite arche par look) */
+.cine-choix { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 2px; }
+.cine-choix .atelier-chapo { flex: 1 1 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cine-exemples { display: flex; gap: 2px; margin-left: -6px; }
+.cine-exemple { width: 40px; height: 52px; border: 0; background: none; padding: 4px 6px; cursor: pointer; display: grid; place-items: center; }
+.cine-exemple img { width: 28px; height: 42px; object-fit: cover; border-radius: 14px 14px 4px 4px; display: block; opacity: .55;
+  outline: 2px solid transparent; outline-offset: 2px; transition: opacity .25s ease, outline-color .25s ease, transform .25s ease; }
+.cine-exemple:hover img { opacity: .9; }
+.cine-exemple[aria-pressed="true"] img { opacity: 1; outline-color: var(--laiton); transform: translateY(-2px); }
+.cine-cadre.change .cine-carte, .cine-cadre.revient .cine-carte { transition: opacity .3s ease; }
+.cine-cadre.change .cine-carte { opacity: 0 !important; }
 .apropos-tete h1 { font: 400 clamp(2.4rem, 6vw, 3.6rem)/1.05 var(--titre); margin: 0 0 18px; letter-spacing: -.01em; text-wrap: balance; }
 .apropos-tete p { margin: 0; font-size: 1.15rem; color: var(--taupe); }
 .apropos-tete strong { color: var(--noyer); font-weight: 600; }
@@ -509,6 +564,10 @@ html.recherche-active { overflow: hidden; }
   .cine { height: calc(100vh + 4 * 70vh); height: calc(100svh + 4 * 70svh); }
   .cine-scene { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 72px; padding-block: 5svh; }
   .cine h2 { margin-bottom: 8px; }
+  .cine-texte { align-self: start; padding-top: 4vh; }
+  .cine-choix .atelier-chapo { flex-basis: auto; }
+  .cine-exemple { width: 46px; height: 62px; }
+  .cine-exemple img { width: 34px; height: 51px; border-radius: 17px 17px 5px 5px; }
   .cine-etapes { grid-template-columns: none; gap: 0; margin-top: 26px; }
   .cine-pas { grid-template-columns: 34px minmax(0, 1fr); gap: 4px 14px; padding: 12px 0 0; }
   .cine-pas-n { width: 34px; height: 34px; font-size: 1.05rem; }

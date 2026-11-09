@@ -914,7 +914,11 @@
      La scène est collée en haut de l'écran ; le défilement de la page fait avancer une valeur p de 0 à 4 :
      0→1 la planche couchée se redresse, 1→2 elle pivote et laisse place à la pièce, 2→3 le calque se trace,
      3→4 les numéros apparaissent un par un. Toucher une étape fait défiler jusqu'à elle.
-     Le look change à chaque visite (jamais deux fois de suite le même, clé « am_atelier ») ; « Un autre exemple » passe au suivant. */
+     Le look change à chaque visite (jamais deux fois de suite le même, clé « am_atelier »), à chaque fois que la
+     démonstration recommence (on remonte au début après l'avoir vue jusqu'aux numéros), et au toucher d'une petite
+     arche sous le titre (09/11/2026, remplace le bouton « Un autre exemple »).
+     Défilement plus régulier : la scène suit la page avec un léger amorti (elle rattrape le défilement en douceur
+     au lieu de sauter quand le doigt lance la page), et les mesures sont lues une seule fois. */
   function demoAtelier() {
     var s = document.querySelector('.cine[data-atelier]');
     if (!s) return;
@@ -924,8 +928,10 @@
     var planche = s.querySelector('.cine-planche'), decor = s.querySelector('.cine-decor');
     var imgP = planche.querySelector('img'), imgD = decor.querySelector('img'), calque = s.querySelector('.couche-calque');
     var couche = s.querySelector('.couche-numeros'), balai = s.querySelector('.cine-balayage'), zone = s.querySelector('.atelier-article');
-    var lienLook = s.querySelector('.atelier-lien'), autre = s.querySelector('.atelier-autre');
-    var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false;
+    var lienLook = s.querySelector('.atelier-lien'), cadre = s.querySelector('.cine-cadre');
+    var exemples = [].slice.call(s.querySelectorAll('.cine-exemple'));
+    var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false, vuJusquauBout = false;
+    var pAff = 0, mesures = null;  // position affichée (amortie) et mesures en cache
     function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
     function adoucir(t) { return 1 - Math.pow(1 - t, 3); }  // départ vif, arrivée douce
@@ -952,16 +958,37 @@
         b.addEventListener('click', function () { choisi = a.n; choixManuel = true; fiche(); var f = zone.firstChild; if (f) f.classList.add('vu'); });
         couche.appendChild(b);
       });
-      etape = 0; dessiner();
+      exemples.forEach(function (b, k) { b.setAttribute('aria-pressed', k === iv ? 'true' : 'false'); });
+      etape = 0; vuJusquauBout = false; pAff = progres(); dessiner(true);
+    }
+    // changer d'exemple en fondu (la scène s'efface, le nouveau look arrive à la même étape)
+    function changerExemple(k) {
+      if (!cadre || RM) { charger(k); return; }
+      cadre.classList.add('change');
+      setTimeout(function () {
+        charger(k); cadre.classList.remove('change'); cadre.classList.add('revient');
+        setTimeout(function () { cadre.classList.remove('revient'); }, 360);
+      }, 300);
     }
     // position dans la section : p de 0 à 4
-    function progres() {
-      var r = s.getBoundingClientRect(), h = window.innerHeight, seg = (s.offsetHeight - h) / 4;
-      return borne(-r.top / seg, 0, 3.999);
+    function mesurer() {
+      var h = window.innerHeight;
+      mesures = { haut: s.getBoundingClientRect().top + window.scrollY, seg: Math.max(1, (s.offsetHeight - h) / 4), decor: decor.offsetHeight };
     }
-    function dessiner() {
+    function progres() {
+      if (!mesures) mesurer();
+      return borne((window.scrollY - mesures.haut) / mesures.seg, 0, 3.999);
+    }
+    function dessiner(direct) {
       attente = false;
-      var p = progres(), k = Math.floor(p) + 1, n = v.articles.length, montres;
+      var cible = progres();
+      // amorti : la scène rattrape le défilement en douceur (pas d'à-coups quand le doigt lance la page)
+      pAff = (RM || direct === true) ? cible : pAff + (cible - pAff) * .2;
+      if (Math.abs(cible - pAff) < .002) pAff = cible; else demander();
+      var p = pAff, k = Math.floor(p) + 1, n = v.articles.length, montres;
+      // la démonstration recommence (on est remonté au début après l'avoir vue jusqu'au bout) : exemple suivant
+      if (p > 3.4) vuJusquauBout = true;
+      if (vuJusquauBout && cible < .08 && V.length > 1) { vuJusquauBout = false; changerExemple(iv + 1); return; }
       if (RM) {
         // mouvement réduit : rien ne tourne ni ne glisse, chaque étape arrive en fondu (transitions CSS)
         planche.style.transform = 'none'; decor.style.transform = 'none';
@@ -991,7 +1018,7 @@
         // … et s'efface complètement avant les numéros (09/11/2026 : les traits restaient sous les numéros)
         calque.style.opacity = borne(1 - (p - 2.88) / .17, 0, 1);
         var bal = borne((p - 2) / .85, 0, 1);
-        balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translateY(' + (bal * (decor.offsetHeight - 2)) + 'px)';
+        balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translate3d(0,' + (bal * (mesures.decor - 2)) + 'px,0)';
         // 4. les numéros apparaissent un par un
         montres = Math.round(borne((p - 3.05) / .55, 0, 1) * n);
       }
@@ -1010,15 +1037,16 @@
     }
     function demander() { if (!attente) { attente = true; requestAnimationFrame(dessiner); } }
     window.addEventListener('scroll', demander, { passive: true });
-    window.addEventListener('resize', demander);
+    window.addEventListener('resize', function () { mesurer(); demander(); });
+    window.addEventListener('load', function () { mesurer(); demander(); });
     pas.forEach(function (b) {
       b.addEventListener('click', function () {
-        var k = +b.dataset.etape, h = window.innerHeight, seg = (s.offsetHeight - h) / 4;
-        var y = window.scrollY + s.getBoundingClientRect().top + (k - 1 + (k === 4 ? .85 : .75)) * seg;
+        mesurer();
+        var k = +b.dataset.etape, y = mesures.haut + (k - 1 + (k === 4 ? .85 : .75)) * mesures.seg;
         window.scrollTo({ top: y, behavior: RM ? 'auto' : 'smooth' });
       });
     });
-    if (autre) autre.addEventListener('click', function () { charger(iv + 1); });
+    exemples.forEach(function (b, k) { b.addEventListener('click', function () { if (k !== iv) changerExemple(k); }); });
     // look de cette visite : au hasard, jamais celui de la visite précédente
     var dernier = null; try { dernier = localStorage.getItem('am_atelier'); } catch (e) {}
     var possibles = V.map(function (x, k) { return k; }).filter(function (k) { return V.length < 2 || V[k].look !== dernier; });
@@ -1186,8 +1214,24 @@
     minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1300);
   }
 
+  /* ---------- Page À propos : mur d'arches de tous les looks (09/11/2026) ----------
+     Il défile tout seul en CSS ; pause au survol, au toucher (8 s) et avec le bouton. */
+  function murLooks() {
+    var m = document.querySelector('.mur');
+    if (!m) return;
+    var b = m.querySelector('.mur-pause'), t = null;
+    if (b) b.addEventListener('click', function () {
+      var p = m.classList.toggle('pause'); b.setAttribute('aria-pressed', p ? 'true' : 'false');
+      b.setAttribute('aria-label', p ? 'Reprendre le défilement des looks' : 'Mettre en pause le défilement des looks');
+    });
+    m.addEventListener('touchstart', function () {
+      if (m.classList.contains('pause')) return;
+      m.classList.add('touche'); clearTimeout(t); t = setTimeout(function () { m.classList.remove('touche'); }, 8000);
+    }, { passive: true });
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks();
     // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
     var ordre = document.getElementById('looks-ordre');
     if (ordre && document.querySelector('.look')) {
