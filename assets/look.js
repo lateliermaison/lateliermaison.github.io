@@ -36,7 +36,11 @@
     if (t) return;
     var p = document.createElement('p');
     p.className = 'temoin-exclu';
-    p.textContent = 'Cet appareil n\u2019est pas compté dans les statistiques.';
+    // pour nous seulement : on voit aussi si l'appareil demande moins d'animations et sa version d'iOS (09/11/2026)
+    var ios = (UA.match(/OS (\d+)_(\d+)/) || []), diag = [];
+    if (RM) diag.push('animations réduites (Réglages > Accessibilité > Mouvement)');
+    if (ios[1] && IOS) diag.push('iOS ' + ios[1] + '.' + ios[2]);
+    p.textContent = 'Cet appareil n\u2019est pas compté dans les statistiques.' + (diag.length ? ' · ' + diag.join(' · ') : '');
     pied.appendChild(p);
   }
   // adresse modifiée sans rechargement (on ajoute #ne-pas-compter à la page déjà ouverte)
@@ -336,13 +340,25 @@
     }
     function nettoyer() {
       clearTimeout(minuteur);
-      grille.style.height = ''; grille.style.transition = '';
+      grille.style.height = ''; grille.style.transition = ''; grille.style.opacity = '';
       cartes.forEach(function (c) { c.style.transition = ''; c.style.transform = ''; c.style.opacity = ''; });
     }
     /* Change de pièce sans saut : les cartes qui restent glissent à leur nouvelle place, les nouvelles apparaissent
        en fondu, la hauteur de la grille suit en douceur et la page remonte doucement au début de la liste. */
     function changer(cat, ordre, montrer) {
-      if (RM || !window.Map) { appliquer(cat, ordre); if (montrer && barre) grille.scrollIntoView(); return; }
+      if (!window.Map) { appliquer(cat, ordre); if (montrer && barre) grille.scrollIntoView(); return; }
+      if (RM) {  // mouvement réduit : la liste change en fondu, sans glisser
+        nettoyer();
+        grille.style.transition = 'opacity .18s ease'; grille.style.opacity = '0';
+        minuteur = setTimeout(function () {
+          appliquer(cat, ordre);
+          if (barre) { var h0 = document.querySelector('.filtres-infos') || grille, c0 = h0.getBoundingClientRect().top + window.scrollY - barre.offsetHeight - 8;
+            if (window.scrollY > c0 + 4 || montrer) window.scrollTo(0, c0); }
+          grille.style.transition = 'opacity .3s ease'; grille.style.opacity = '';
+          minuteur = setTimeout(function () { grille.style.transition = ''; }, 320);
+        }, 190);
+        return;
+      }
       nettoyer();
       var avant = new Map();
       cartes.forEach(function (c) { if (!c.hidden) avant.set(c, c.getBoundingClientRect()); });
@@ -808,16 +824,21 @@
   }
 
 
-  /* ---------- Idées sous la recherche, qui changent toutes seules (08/11/2026) ----------
-     Au chargement : 4 idées tirées au hasard, en favorisant les pièces que le visiteur a déjà regardées
-     (mémorisées sur cet appareil seulement, clé « am_gouts ») et Noël en novembre-décembre.
-     Ensuite, une idée est remplacée toutes les 6 secondes (fondu), et après 40 secondes le titre devient
-     « Et pourquoi pas… » avec des idées pas encore montrées. Pause quand on survole, quand le champ est actif
-     ou quand l'onglet est caché. */
+  /* ---------- Idées sous la recherche, qui changent naturellement (08/11/2026, revu le 09/11/2026) ----------
+     Les idées ne changent PAS à chaque rechargement : elles dépendent du moment de la journée (un nouveau tirage
+     toutes les 3 heures, le même pour tout ce créneau) et des pièces que le visiteur a regardées (mémorisées sur cet
+     appareil seulement, clé « am_gouts »), avec Noël en novembre-décembre. Ce qui est à l'écran est retenu
+     (clé « am_idees ») : recharger la page montre les mêmes idées. Pendant la visite, une idée est remplacée en
+     fondu toutes les 8 secondes, 6 fois au plus ; pause au survol, au toucher, quand le champ est actif ou l'onglet caché. */
   function lireGouts() { try { return JSON.parse(localStorage.getItem('am_gouts') || '{}') || {}; } catch (e) { return {}; } }
   function noterGouts(cats) {
     try { var g = lireGouts(); cats.forEach(function (c) { g[c] = Math.min(20, (g[c] || 0) + 1); }); localStorage.setItem('am_gouts', JSON.stringify(g)); } catch (e) {}
   }
+  function hasard(graine) {  // tirage « au hasard » mais toujours le même pour une même graine
+    var a = graine >>> 0;
+    return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  if (!Math.imul) Math.imul = function (a, b) { var ah = (a >>> 16) & 0xffff, al = a & 0xffff, bh = (b >>> 16) & 0xffff, bl = b & 0xffff; return ((al * bl) + (((ah * bl + al * bh) << 16) >>> 0) | 0); };
   function ideesVivantes() {
     var bloc = document.querySelector('.idees[data-idees]');
     if (!bloc) return;
@@ -825,53 +846,67 @@
     var pool; try { pool = JSON.parse(bloc.getAttribute('data-idees')); } catch (e) { return; }
     if (!liste || !pool || pool.length < 5) return;
     var gouts = lireGouts(), mois = new Date().getMonth(), saison = mois === 10 || mois === 11;
-    var vues = {}, debut = Date.now(), pause = false, place = 0;
+    var creneau = Math.floor(Date.now() / (3 * 3600 * 1000));
+    // la pièce la plus regardée fait partie de la graine : si les goûts changent, les idées suivent
+    var prefere = Object.keys(gouts).sort(function (a, b) { return gouts[b] - gouts[a]; })[0] || '';
+    var graine = creneau * 31; for (var c = 0; c < prefere.length; c++) graine = (graine * 33 + prefere.charCodeAt(c)) >>> 0;
+    var alea = hasard(graine), vues = {}, pause = false, place = 0;
     function poids(x) {
       var p = 1;
       (x.cats || []).forEach(function (c) { p += Math.min(4, gouts[c] || 0) * .8; });
       if (saison && x.saison) p += 1.5;
-      if (Date.now() - debut > 40000 && !vues[x.q]) p += 3;  // après un moment : des idées nouvelles
+      if (vues[x.q]) p *= .3;  // ce qui a déjà été montré revient moins souvent
       return p;
     }
     function tirer(exclus) {
       var choix = pool.filter(function (x) { return exclus.indexOf(x.q) < 0; });
       if (!choix.length) return null;
       var total = 0; choix.forEach(function (x) { total += poids(x); });
-      var r = Math.random() * total;
+      var r = alea() * total;
       for (var i = 0; i < choix.length; i++) { r -= poids(choix[i]); if (r <= 0) return choix[i]; }
       return choix[choix.length - 1];
     }
+    function trouver(q) { return pool.filter(function (x) { return x.q === q; })[0]; }
     function bouton(x) {
       var b = document.createElement('button'); b.type = 'button'; b.dataset.q = x.q; if (x.piece) b.dataset.piece = x.piece; if (x.ids) b.dataset.ids = x.ids.join(' '); b.textContent = x.q; vues[x.q] = 1; return b;
     }
-    // premier tirage
+    function retenir() {
+      try { localStorage.setItem('am_idees', JSON.stringify({ c: creneau, p: prefere, q: [].map.call(liste.children, function (b) { return b.dataset.q; }) })); } catch (e) {}
+    }
+    // ce qui était à l'écran pendant ce créneau, sinon un nouveau tirage
     var montres = [];
-    for (var k = 0; k < 4; k++) { var x = tirer(montres); if (x) montres.push(x.q); }
+    try {
+      var m = JSON.parse(localStorage.getItem('am_idees') || 'null');
+      if (m && m.c === creneau && m.p === prefere && m.q) montres = m.q.filter(function (q) { return trouver(q); }).slice(0, 4);
+    } catch (e) {}
+    while (montres.length < 4) { var x = tirer(montres); if (!x) break; montres.push(x.q); }
     liste.innerHTML = '';
-    montres.forEach(function (q) { liste.appendChild(bouton(pool.filter(function (x) { return x.q === q; })[0])); });
-    if (RM) return;  // mouvements réduits : pas de rotation automatique
+    montres.forEach(function (q) { liste.appendChild(bouton(trouver(q))); });
+    retenir();
     bloc.addEventListener('mouseenter', function () { pause = true; });
     bloc.addEventListener('mouseleave', function () { pause = false; });
     var calme = 0;  // après un toucher ou un clic, les idées ne bougent plus pendant 15 s (le doigt ne tombe pas sur une autre)
     bloc.addEventListener('pointerdown', function () { calme = Date.now(); });
-    var champ = bloc.parentNode.querySelector('input');
+    bloc.addEventListener('touchstart', function () { calme = Date.now(); }, { passive: true });
+    var champ = bloc.parentNode.querySelector('input'), changements = 0;
     function tourner() {
       if (pause || Date.now() - calme < 15000 || document.hidden || (champ && document.activeElement === champ) || bloc.contains(document.activeElement)) return;
-      if (titre && Date.now() - debut > 40000 && titre.textContent !== 'Et pourquoi pas…') {
-        titre.classList.add('sort'); setTimeout(function () { titre.textContent = 'Et pourquoi pas…'; titre.classList.remove('sort'); }, 350);
-      }
       var actuels = [].map.call(liste.children, function (b) { return b.dataset.q; });
       var x = tirer(actuels); if (!x) return;
       var vieux = liste.children[place % liste.children.length]; place++;
       if (!vieux) return;
+      changements++;
+      if (titre && changements === 4 && titre.textContent !== 'Et pourquoi pas…') {
+        titre.classList.add('sort'); setTimeout(function () { titre.textContent = 'Et pourquoi pas…'; titre.classList.remove('sort'); }, 350);
+      }
       vieux.classList.add('sort');
       setTimeout(function () {
-        var b = bouton(x); b.classList.add('entre'); liste.replaceChild(b, vieux);
+        var b = bouton(x); b.classList.add('entre'); liste.replaceChild(b, vieux); retenir();
         requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.remove('entre'); }); });
       }, 350);
     }
-    // les idées s'arrêtent de changer après 10 changements (environ 1 minute) : pas de mouvement sans fin
-    var tours = 0, rotation = setInterval(function () { if (++tours > 10) { clearInterval(rotation); return; } tourner(); }, 6000);
+    // au plus 6 changements par visite (environ 1 minute) : pas de mouvement sans fin
+    var rotation = setInterval(function () { if (changements >= 6) { clearInterval(rotation); return; } tourner(); }, 8000);
   }
 
 
@@ -926,28 +961,40 @@
     }
     function dessiner() {
       attente = false;
-      var p = RM ? Math.floor(progres()) + .999 : progres();
-      var k = Math.floor(p) + 1;
-      // 1. la planche se redresse (0→0,7), puis pivote et s'efface (1→1,8)
-      var lever = adoucir(borne(p / .7, 0, 1)), tour = adoucir(borne((p - 1) / .8, 0, 1));
-      planche.style.transform = 'translateY(' + ((1 - lever) * 10) + '%) rotateX(' + ((1 - lever) * 58) + 'deg) rotateY(' + (-tour * 100) + 'deg) scale(' + (.88 + lever * .12) + ')';
-      planche.style.opacity = tour < .55 ? 1 : borne(1 - (tour - .55) / .45, 0, 1);
-      // 2. la pièce arrive de l'autre côté
-      var arrivee = adoucir(borne((p - 1.15) / .75, 0, 1));
-      decor.style.transform = 'rotateY(' + ((1 - arrivee) * 100) + 'deg) scale(' + (1 + (p > 2 && p < 3.2 ? .025 : 0)) + ')';
-      decor.style.opacity = p < 1.15 ? 0 : borne(arrivee * 2, 0, 1);
-      // 3. le calque se trace et un trait laiton balaie l'image
-      var trace = borne((p - 2.1) / .6, 0, 1);
-      [].forEach.call(calque.querySelectorAll('.cote'), function (g, i) {
-        var t = borne(trace * 2 - i * .6, 0, 1);
-        var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 1 - t;
-        g.classList.toggle('vu', t > .95);
-        g.style.opacity = p > 3.6 ? borne(1 - (p - 3.6) / .3, .0, 1) : 1;
-      });
-      var bal = borne((p - 2) / .9, 0, 1);
-      balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translateY(' + (bal * (decor.offsetHeight - 2)) + 'px)';
-      // 4. les numéros apparaissent un par un
-      var n = v.articles.length, montres = Math.round(borne((p - 3) / .6, 0, 1) * n);
+      var p = progres(), k = Math.floor(p) + 1, n = v.articles.length, montres;
+      if (RM) {
+        // mouvement réduit : rien ne tourne ni ne glisse, chaque étape arrive en fondu (transitions CSS)
+        planche.style.transform = 'none'; decor.style.transform = 'none';
+        planche.style.opacity = k === 1 ? 1 : 0; decor.style.opacity = k >= 2 ? 1 : 0;
+        [].forEach.call(calque.querySelectorAll('.cote'), function (g) {
+          var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 0; g.classList.add('vu'); g.style.opacity = 1;
+        });
+        calque.style.opacity = k === 3 ? 1 : 0;
+        balai.style.opacity = 0;
+        montres = k === 4 ? n : 0;
+      } else {
+        // 1. la planche se redresse (0→0,7), puis pivote et s'efface (1→1,8)
+        var lever = adoucir(borne(p / .7, 0, 1)), tour = adoucir(borne((p - 1) / .8, 0, 1));
+        planche.style.transform = 'translateY(' + ((1 - lever) * 10) + '%) rotateX(' + ((1 - lever) * 58) + 'deg) rotateY(' + (-tour * 100) + 'deg) scale(' + (.88 + lever * .12) + ')';
+        planche.style.opacity = tour < .55 ? 1 : borne(1 - (tour - .55) / .45, 0, 1);
+        // 2. la pièce arrive de l'autre côté
+        var arrivee = adoucir(borne((p - 1.15) / .75, 0, 1));
+        decor.style.transform = 'rotateY(' + ((1 - arrivee) * 100) + 'deg) scale(' + (1 + (p > 2 && p < 3 ? .025 : 0)) + ')';
+        decor.style.opacity = p < 1.15 ? 0 : borne(arrivee * 2, 0, 1);
+        // 3. le calque se trace et un trait laiton balaie l'image…
+        var trace = borne((p - 2.1) / .6, 0, 1);
+        [].forEach.call(calque.querySelectorAll('.cote'), function (g, i) {
+          var t = borne(trace * 2 - i * .6, 0, 1);
+          var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 1 - t;
+          g.classList.toggle('vu', t > .95); g.style.opacity = 1;
+        });
+        // … et s'efface complètement avant les numéros (09/11/2026 : les traits restaient sous les numéros)
+        calque.style.opacity = borne(1 - (p - 2.88) / .17, 0, 1);
+        var bal = borne((p - 2) / .85, 0, 1);
+        balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translateY(' + (bal * (decor.offsetHeight - 2)) + 'px)';
+        // 4. les numéros apparaissent un par un
+        montres = Math.round(borne((p - 3.05) / .55, 0, 1) * n);
+      }
       [].forEach.call(couche.children, function (b, i) { b.classList.toggle('vu', i < montres); });
       if (montres >= n && !choixManuel) { choisi = 1; }
       if (k !== etape) {
@@ -978,70 +1025,165 @@
     charger(possibles[Math.floor(Math.random() * possibles.length)]);
   }
 
-  /* ---------- Accueil : bandeau d'introduction (09/11/2026, en test) ----------
+  /* ---------- Accueil : bandeau d'introduction (08/11/2026, interactif le 09/11/2026) ----------
      Arches des 5 derniers looks en éventail 3D ; sur l'arche de devant, 3 numéros s'allument l'un après l'autre
-     avec l'article et son prix, puis l'éventail tourne vers le look suivant. Pause au survol ou au toucher ;
-     arrêt après 2 tours ; rien ne bouge si l'appareil demande moins d'animations. */
+     avec l'article et son prix, puis l'éventail passe au look suivant.
+     Interactif : glisser du doigt (ou de la souris) fait tourner l'éventail en suivant le doigt ; toucher une arche
+     de côté l'amène devant ; toucher celle de devant ouvre le look ; flèches et points pour choisir.
+     Le défilement automatique reprend 7 s après le dernier geste ; il s'arrête après 2 tours.
+     Mouvement réduit : pas de rotation automatique en 3D, le passage d'un look à l'autre se fait en fondu
+     (le glisser suit toujours le doigt, c'est permis par les recommandations d'Apple). */
   function introAccueil() {
     var s = document.querySelector('.intro[data-intro]');
     if (!s) return;
     var d; try { d = JSON.parse(s.getAttribute('data-intro')); } catch (e) { return; }
-    var arches = [].slice.call(s.querySelectorAll('.intro-arche')), scene = s.querySelector('.intro-scene');
+    var arches = [].slice.call(s.querySelectorAll('.intro-arche')), scene = s.querySelector('.intro-scene'), boite = s.querySelector('.intro-arches');
     var bulle = s.querySelector('.intro-bulle'), bN = s.querySelector('.intro-bulle-n'), bNom = s.querySelector('.intro-bulle-nom'), bPrix = s.querySelector('.intro-bulle-prix');
-    var avant = 0, num = 0, pause = false, tours = 0, minuteur = null, n = arches.length;
-    function placer() {
-      var etroit = scene.offsetWidth < 600;
+    var points = [].slice.call(s.querySelectorAll('.intro-point')), astuce = s.querySelector('.intro-astuce');
+    var n = arches.length, avant = 0, num = 0, autos = 0, minuteur = null, reprise = null, survol = false, geste = 0;
+    var anciens = arches.map(function () { return null; });
+    if (!n) return;
+    function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
+    function decalage(i, f) {  // position de l'arche i par rapport à celle de devant (… -2 -1 0 1 2 …), f = glissement en cours
+      var o = i - avant - (f || 0);
+      while (o > n / 2) o -= n;
+      while (o < -n / 2) o += n;
+      return o;
+    }
+    function placer(f, sansTransition) {
+      var etroit = scene.offsetWidth < 600, pasX = etroit ? 46 : 40;
       arches.forEach(function (a, i) {
-        var o = ((i - avant + n + Math.floor(n / 2)) % n) - Math.floor(n / 2);  // -2 … 2
-        var ab = Math.abs(o);
-        a.style.transform = 'translate(-50%, -50%) translateX(' + (o * (etroit ? 46 : 40)) + '%) translateZ(' + (-ab * 150) + 'px) rotateY(' + (-o * 24) + 'deg)';
-        a.style.zIndex = 10 - ab; a.style.filter = 'brightness(' + (1 - ab * .1) + ') saturate(' + (1 - ab * .15) + ')';
-        a.style.opacity = ab > 2 ? 0 : 1;
+        var o = decalage(i, f), ab = Math.abs(o);
+        // une arche qui passe d'un bout à l'autre de l'éventail ne doit pas traverser la scène : elle réapparaît en fondu
+        var saut = anciens[i] !== null && Math.abs(o - anciens[i]) > 2.5;
+        anciens[i] = o;
+        if (saut && !sansTransition) {
+          a.style.transition = 'none'; a.style.opacity = 0;
+          poser(a, o, ab, pasX); void a.offsetWidth; a.style.transition = '';
+          a.style.opacity = ab > 2.4 ? 0 : 1;
+          return;
+        }
+        poser(a, o, ab, pasX);
+        a.style.opacity = borne(3 - ab, 0, 1);
       });
+      points.forEach(function (b, i) { if (i === avant) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    }
+    function poser(a, o, ab, pasX) {
+      a.style.transform = 'translate(-50%, -50%) translateX(' + (o * pasX) + '%) translateZ(' + (-Math.min(ab, 2.5) * 150) + 'px) rotateY(' + (-borne(o, -2.5, 2.5) * 24) + 'deg)';
+      a.style.zIndex = Math.round(10 - ab * 2); a.style.filter = 'brightness(' + (1 - Math.min(ab, 2) * .1) + ') saturate(' + (1 - Math.min(ab, 2) * .15) + ')';
     }
     function montrerNumero() {
-      var look = d[avant], x = look.numeros[num];
+      var look = d[avant], x = look && look.numeros[num];
       if (!x) return;
       var carte = arches[avant].getBoundingClientRect(), base = scene.getBoundingClientRect();
+      if (!carte.width) return;
       var px = carte.left - base.left + carte.width * x.pos[0] / 100, py = carte.top - base.top + carte.height * x.pos[1] / 100;
       bN.textContent = x.n; bNom.textContent = x.nom.length > 46 ? x.nom.slice(0, 44) + '…' : x.nom; bPrix.textContent = x.prix;
-      // la bulle part du numéro, vers l'intérieur de la scène
-      var droite = px > base.width * .55;
+      var droite = px > base.width * .55;  // la bulle part du numéro, vers l'intérieur de la scène
       bulle.style.flexDirection = droite ? 'row-reverse' : 'row';
       var largeur = bulle.offsetWidth || 220;
-      var gx = droite ? px - largeur + 15 : px - 15;
-      bulle.style.left = borne(gx, 6, base.width - largeur - 6) + 'px'; bulle.style.top = borne(py - 15, 6, base.height - 50) + 'px';
+      bulle.style.left = borne(droite ? px - largeur + 15 : px - 15, 6, base.width - largeur - 6) + 'px'; bulle.style.top = borne(py - 15, 6, base.height - 50) + 'px';
       bulle.classList.add('vu');
     }
-    function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
-    function suivant() {
-      if (pause || document.hidden) { minuteur = setTimeout(suivant, 1200); return; }
-      num++;
-      if (num >= d[avant].numeros.length) {
-        num = 0; bulle.classList.remove('vu');
-        avant = (avant + 1) % n; if (avant === 0) tours++;
-        if (tours >= 2) { placer(); setTimeout(montrerNumero, 1000); return; }  // fin : le dernier état reste à l'écran
-        placer(); minuteur = setTimeout(function () { montrerNumero(); minuteur = setTimeout(suivant, 2600); }, 1100);
+    function cacherBulle() { bulle.classList.remove('vu'); }
+    // aller au look k (geste, flèche, point ou défilement automatique)
+    function aller(k, auto) {
+      clearTimeout(minuteur);
+      k = ((k % n) + n) % n; num = 0; cacherBulle();
+      if (RM && k !== avant) {  // mouvement réduit : fondu
+        boite.classList.add('fondu');
+        setTimeout(function () { avant = k; placer(0, true); boite.classList.remove('fondu'); }, 300);
+        minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 900);
         return;
       }
-      bulle.classList.remove('vu');
-      setTimeout(montrerNumero, 260);
-      minuteur = setTimeout(suivant, 2600);
+      avant = k; placer();
+      minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1000);
     }
+    // défilement automatique : 3 numéros par look, puis look suivant ; arrêt après 2 tours
+    function planifier() {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(function etape() {
+        if (survol || document.hidden || Date.now() - geste < 7000) { minuteur = setTimeout(etape, 1200); return; }
+        num++;
+        if (num < d[avant].numeros.length) { cacherBulle(); setTimeout(montrerNumero, 260); planifier(); return; }
+        if (++autos >= n * 2) { num = d[avant].numeros.length - 1; return; }  // fin : le dernier état reste à l'écran
+        aller(avant + 1, true);
+      }, 2600);
+    }
+    function toucher() {  // un geste de la personne : l'automatique attend 7 s
+      geste = Date.now();
+      if (astuce) astuce.classList.add('cache');
+    }
+
+    // --- glisser au doigt / à la souris : l'éventail suit le geste ---
+    var depart = null, f = 0, bouge = false, pasPx = 1;
+    function debut(x, y) { depart = { x: x, y: y, t: Date.now() }; bouge = false; f = 0; pasPx = Math.max(60, arches[avant].offsetWidth * (scene.offsetWidth < 600 ? .46 : .40)); }
+    function mouvement(x, y, ev) {
+      if (!depart) return;
+      var dx = x - depart.x, dy = y - depart.y;
+      if (!bouge) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dy) > Math.abs(dx)) { depart = null; return; }  // geste vertical : on laisse la page défiler
+        bouge = true; toucher(); clearTimeout(minuteur); cacherBulle();
+        boite.classList.add('tire'); scene.classList.add('tire');
+      }
+      if (ev && ev.cancelable) ev.preventDefault();
+      f = borne(-dx / pasPx, -1.6, 1.6);
+      placer(f, true);
+    }
+    function fin() {
+      if (!depart) return;
+      var vite = bouge && Math.abs(f) / Math.max(1, Date.now() - depart.t) > .0025;
+      depart = null;
+      boite.classList.remove('tire'); scene.classList.remove('tire');
+      if (!bouge) return;
+      var pas = Math.abs(f) > .5 ? Math.round(f) : (Math.abs(f) > .18 || vite ? (f > 0 ? 1 : -1) : 0);
+      var cible = avant + pas;
+      // repartir de la position glissée pour que l'arche finisse son mouvement en douceur
+      arches.forEach(function (a, i) { anciens[i] = decalage(i, f); });
+      avant = ((cible % n) + n) % n; num = 0; placer();
+      clearTimeout(minuteur); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 900);
+      setTimeout(function () { bouge = false; }, 60);
+    }
+    if (window.PointerEvent) {
+      scene.addEventListener('pointerdown', function (ev) { if (ev.pointerType === 'mouse' && ev.button !== 0) return; debut(ev.clientX, ev.clientY); });
+      window.addEventListener('pointermove', function (ev) { mouvement(ev.clientX, ev.clientY, ev); });
+      window.addEventListener('pointerup', fin); window.addEventListener('pointercancel', fin);
+    } else {
+      scene.addEventListener('touchstart', function (ev) { var t = ev.touches[0]; debut(t.clientX, t.clientY); }, { passive: true });
+      scene.addEventListener('touchmove', function (ev) { var t = ev.touches[0]; mouvement(t.clientX, t.clientY, ev); }, { passive: false });
+      scene.addEventListener('touchend', fin);
+    }
+    // iOS : empêcher la page de bouger pendant qu'on fait glisser l'éventail de côté
+    scene.addEventListener('touchmove', function (ev) { if (bouge && ev.cancelable) ev.preventDefault(); }, { passive: false });
+    scene.addEventListener('dragstart', function (ev) { ev.preventDefault(); });
+
+    // toucher une arche : de côté -> elle vient devant ; devant -> ouvre le look (sauf juste après un glisser)
     arches.forEach(function (a, i) {
-      a.addEventListener('click', function (ev) { if (i !== avant) { ev.preventDefault(); avant = i; num = 0; bulle.classList.remove('vu'); placer(); setTimeout(montrerNumero, 900); } });
+      a.addEventListener('click', function (ev) {
+        if (bouge) { ev.preventDefault(); return; }
+        if (i !== avant) { ev.preventDefault(); toucher(); aller(i); }
+      });
     });
-    scene.addEventListener('mouseenter', function () { pause = true; });
-    scene.addEventListener('mouseleave', function () { pause = false; });
-    scene.addEventListener('touchstart', function () { pause = true; setTimeout(function () { pause = false; }, 8000); }, { passive: true });
-    window.addEventListener('resize', function () { placer(); if (bulle.classList.contains('vu')) montrerNumero(); });
+    s.querySelectorAll('.intro-fleche').forEach(function (b) {
+      b.addEventListener('click', function () { toucher(); aller(avant + (+b.dataset.sens)); });
+    });
+    points.forEach(function (b, i) { b.addEventListener('click', function () { toucher(); if (i !== avant) aller(i); }); });
+    var choixBloc = s.querySelector('.intro-choix');
+    if (choixBloc) choixBloc.addEventListener('keydown', function (ev) {
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); toucher(); aller(avant + 1); }
+      else if (ev.key === 'ArrowLeft') { ev.preventDefault(); toucher(); aller(avant - 1); }
+    });
+    scene.addEventListener('mouseenter', function () { survol = true; });
+    scene.addEventListener('mouseleave', function () { survol = false; });
+    window.addEventListener('resize', function () { placer(0, true); if (bulle.classList.contains('vu')) montrerNumero(); });
     // le bouton « Commencer à s'inspirer » descend en douceur jusqu'aux looks
     var b = s.querySelector('.intro-bouton'), cible = document.getElementById('les-looks');
     if (b && cible) b.addEventListener('click', function (ev) { ev.preventDefault(); cible.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }); });
-    // entrée : les arches partent d'une pile et s'ouvrent en éventail (le seul grand mouvement de la page)
-    if (RM) { placer(); montrerNumero(); return; }
+    // entrée : les arches partent d'une pile et s'ouvrent en éventail
+    if (RM) { placer(0, true); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return; }
     requestAnimationFrame(function () { requestAnimationFrame(function () { placer(); }); });
-    setTimeout(function () { montrerNumero(); minuteur = setTimeout(suivant, 2600); }, 1300);
+    minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1300);
   }
 
   function demarrer() {

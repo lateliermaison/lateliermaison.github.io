@@ -91,7 +91,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .article.ouvert .apercu { display: block; animation: apercu-in .28s ease both; }
 .apercu img { display: block; height: 150px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; border-radius: 12px; background: var(--laiton-clair); }
 @keyframes apercu-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .article.ouvert .apercu { animation: none; } }
+@keyframes apercu-fondu { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .article.ouvert .apercu { animation: apercu-fondu .25s ease both; } }
 .article-bas { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 10px; }
 .prix { font-weight: 600; }
 .bouton {
@@ -133,7 +134,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .texte h1 { font: 400 2.4rem/1.1 var(--titre); margin: 0 0 20px; }
 .texte h2 { font: 400 1.4rem/1.2 var(--titre); margin: 32px 0 8px; }
 
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+/* Mouvement réduit (réglage iPhone « Réduire les animations ») : on ne coupe pas tout, on remplace les déplacements
+   par des fondus doux (recommandation Apple), 09/11/2026. Avant, toutes les animations étaient supprimées. */
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto !important; } .carte img, .menu-vignette img { transition: none; } }
 .form-etat { min-height: 1.4em; margin: 8px 0 0; font-size: .95rem; color: var(--taupe); }
 .form-etat.ok { color: #3d6b45; font-weight: 600; }
 .form-etat.erreur { color: #9a3b2e; font-weight: 600; }
@@ -275,7 +278,10 @@ html.menu-actif { overflow: hidden; }
   .filtres { padding-top: 4px; }
   .filtres-liste { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scrollbar-width: none; gap: 20px; margin-inline: -16px; padding-inline: 16px; mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); }
 }
-@media (prefers-reduced-motion: reduce) { .menu-fond, .menu-panneau, .menu-vignette img { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .menu-panneau { transform: none; opacity: 0; transition: opacity .25s ease; }
+  .menu.ouvert .menu-panneau { opacity: 1; }
+}
 
 /* ===== Barre des pièces sur une seule ligne + recherche intelligente (05/11/2026) ===== */
 /* Accueil : le titre à gauche, la recherche à droite (ordinateur) ; l'une sous l'autre (téléphone) */
@@ -345,7 +351,7 @@ html.menu-actif { overflow: hidden; }
 .idees-titre, .idees button { transition: opacity .35s ease, transform .35s ease; }
 .idees-titre.sort, .idees button.sort { opacity: 0; transform: translateY(-4px); }
 .idees button.entre { opacity: 0; transform: translateY(4px); }
-@media (prefers-reduced-motion: reduce) { .idees-titre, .idees button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .idees-titre, .idees button { transition: opacity .35s ease; transform: none !important; } }
 
 /* Liste des suggestions */
 .recherche-resultats {
@@ -413,7 +419,11 @@ html.recherche-active { overflow: hidden; }
 .filtres-infos .compte { margin-right: 0; }
 .filtres-infos { justify-content: flex-start; } .filtres-infos .tri { margin-left: auto; }
 
-@media (prefers-reduced-motion: reduce) { .recherche-fond, .recherche-feuille, .filtres-loupe { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .recherche-feuille { transform: none; opacity: 0; transition: opacity .22s ease; }
+  .recherche-panneau.ouvert .recherche-feuille { opacity: 1; }
+  .filtres-loupe { transform: none; transition: opacity .2s ease; }
+}
 
 /* ---------- Page À propos (09/11/2026) : démonstration « Comment naît un look » ---------- */
 .apropos { display: grid; gap: 64px; padding: 28px 0 80px; }
@@ -428,9 +438,9 @@ html.recherche-active { overflow: hidden; }
 /* ---------- « Comment naît un look » en cinématique (09/11/2026, en test) ----------
    La scène reste collée en haut de l'écran pendant qu'on fait défiler ; chaque 80 % d'écran fait avancer
    d'une étape. Le texte de l'étape reste toujours à côté (ordinateur) ou au-dessus (téléphone) de l'image. */
-.cine { position: relative; height: calc(100svh + 4 * 80svh); }
+.cine { position: relative; height: calc(100vh + 4 * 80vh); height: calc(100svh + 4 * 80svh); }
 .cine-scene {
-  position: sticky; top: 0; height: 100svh; box-sizing: border-box;
+  position: -webkit-sticky; position: sticky; top: 0; height: 100vh; height: 100svh; box-sizing: border-box;
   display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding-block: 14px 10px;
 }
 .cine-texte { min-width: 0; }
@@ -461,7 +471,7 @@ html.recherche-active { overflow: hidden; }
 
 /* l'image : deux cartes en arche dans un espace 3D (la planche, puis la pièce) */
 .cine-visuel { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; gap: 8px; }
-.cine-cadre { position: relative; height: 100%; max-width: 100%; aspect-ratio: 2 / 3; perspective: 1400px; }
+.cine-cadre { position: relative; height: 100%; max-width: 100%; aspect-ratio: 2 / 3; perspective: 1400px; -webkit-perspective: 1400px; }
 .cine-carte {
   position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; will-change: transform, opacity;
   border-radius: 50% 50% 4% 4% / 33.33% 33.33% 2.7% 2.7%;
@@ -474,7 +484,7 @@ html.recherche-active { overflow: hidden; }
 /* trait laiton qui balaie l'image pendant la vérification */
 .cine-balayage { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--laiton);
   box-shadow: 0 0 14px 3px rgba(233, 220, 195, .9); opacity: 0; pointer-events: none; }
-.couche-calque { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.couche-calque { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .couche-calque line { stroke: var(--noyer); stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .couche-calque .cote-trait { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .couche-calque text { font: 600 3.4px/1 var(--texte); fill: var(--noyer); paint-order: stroke; stroke: var(--craie); stroke-width: .9px; opacity: 0; transition: opacity .3s ease; }
@@ -496,7 +506,7 @@ html.recherche-active { overflow: hidden; }
 .cine[data-etape="4"] .cine-indice { opacity: 0; }
 
 @media (min-width: 900px) {
-  .cine { height: calc(100svh + 4 * 70svh); }
+  .cine { height: calc(100vh + 4 * 70vh); height: calc(100svh + 4 * 70svh); }
   .cine-scene { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 72px; padding-block: 5svh; }
   .cine h2 { margin-bottom: 8px; }
   .cine-etapes { grid-template-columns: none; gap: 0; margin-top: 26px; }
@@ -507,10 +517,13 @@ html.recherche-active { overflow: hidden; }
   .cine-textes { margin-top: 22px; min-height: 7em; max-width: 46ch; }
   .cine-titre { display: none; }
   .cine-desc { font-size: 1.05rem; }
-  .cine-visuel { height: 90svh; }
+  .cine-visuel { height: 90vh; height: 90svh; }
 }
+/* mouvement réduit : la scène ne tourne plus, chaque étape arrive en fondu */
 @media (prefers-reduced-motion: reduce) {
-  .cine-etape, .cine-pas-n, .atelier-fiche, .couche-numeros .pastille, .couche-calque text { transition: none !important; }
+  .cine-carte, .couche-calque { transition: opacity .5s ease; }
+  .cine-etape, .atelier-fiche, .couche-numeros .pastille { transform: none !important; transition: opacity .35s ease; }
+  .couche-numeros .pastille.vu { transform: translate(-50%, -50%) !important; }
 }
 
 .criteres { display: grid; gap: 20px 40px; margin: 8px 0 0; }
@@ -521,24 +534,45 @@ html.recherche-active { overflow: hidden; }
 
 /* ---------- Accueil : bandeau d'introduction (09/11/2026, en test) ---------- */
 .intro { display: grid; gap: 18px; padding: 22px 0 40px; border-bottom: 1px solid var(--trait); grid-template-areas: "titre" "scene" "texte"; }
-.intro h1 { grid-area: titre; } .intro-scene { grid-area: scene; } .intro-texte { grid-area: texte; }
+.intro h1 { grid-area: titre; } .intro-texte { grid-area: texte; }
 .intro h1 { font: 400 clamp(2.1rem, 6.4vw, 4rem)/1.05 var(--titre); margin: 0; letter-spacing: -.01em; text-wrap: balance; max-width: 16ch; }
 .intro-chapo { margin: 0; color: var(--taupe); font-size: 1.08rem; max-width: 46ch; }
 .intro-temps { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 10px; }
 .intro-temps li { display: flex; align-items: center; gap: 12px; font-size: .98rem; }
 .intro-temps span { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--noyer); color: var(--craie);
   display: grid; place-items: center; font: 400 1rem/1 var(--titre); }
-.intro-action { margin: 24px 0 0; }
+.intro-action { margin: 24px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 22px; }
 .intro-bouton { padding: 14px 24px; font-size: 1rem; }
-.intro-scene { position: relative; height: clamp(320px, 48svh, 580px); perspective: 1600px; overflow: hidden; }
+.intro-bloc { grid-area: scene; min-width: 0; }
+.intro-scene { --h: clamp(320px, 48vh, 580px); position: relative; height: var(--h); perspective: 1600px; -webkit-perspective: 1600px; overflow: hidden;
+  touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: grab; }
+@supports (height: 1svh) { .intro-scene { --h: clamp(320px, 48svh, 580px); } }
+.intro-scene.tire { cursor: grabbing; }
 .intro-arches { position: absolute; inset: 0; transform-style: preserve-3d; }
 .intro-arche {
-  position: absolute; left: 50%; top: 47%; height: 86%; aspect-ratio: 2 / 3; overflow: hidden; display: block;
+  position: absolute; left: 50%; top: 49%; height: calc(var(--h) * .88); width: calc(var(--h) * .88 * 2 / 3); overflow: hidden; display: block;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; -webkit-user-drag: none;
   border-radius: 50% 50% 4% 4% / 33.33% 33.33% 2.7% 2.7%; background: var(--trait);
   box-shadow: 0 18px 30px -20px rgba(46, 34, 25, .5);
   transform: translate(-50%, -50%) scale(.9); transition: transform 1s cubic-bezier(.2, .8, .2, 1), filter .8s ease, opacity .6s ease;
 }
-.intro-arche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.intro-arche img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+.intro-arches.tire .intro-arche { transition: none; }
+/* choix du look : flèches + points (un point = un look) */
+.intro-choix { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 6px; }
+.intro-fleche { width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; color: var(--noyer); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.intro-fleche span { width: 9px; height: 9px; border: solid currentColor; border-width: 0 1.7px 1.7px 0; transform: translateX(2px) rotate(135deg); }
+.intro-fleche.suiv span { transform: translateX(-2px) rotate(-45deg); }
+.intro-fleche:hover { background: var(--trait); }
+.intro-points { display: flex; }
+.intro-point { width: 28px; height: 44px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; place-items: center; }
+.intro-point i { width: 7px; height: 7px; border-radius: 4px; background: var(--trait); transition: width .3s ease, background .3s ease; }
+.intro-point[aria-current="true"] i { width: 20px; background: var(--noyer); }
+.intro-astuce { margin: 0; text-align: center; font-size: .82rem; color: var(--taupe); transition: opacity .4s ease; }
+.intro-astuce.cache { opacity: 0; }
+.intro-atelier { display: inline-block; padding-block: 12px; color: var(--noyer); font-weight: 600; text-decoration: underline;
+  text-decoration-color: var(--laiton); text-underline-offset: 4px; }
+.intro-atelier:hover { text-decoration-thickness: 2px; }
 .intro-bulle { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; pointer-events: none;
   opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; z-index: 30; }
 .intro-bulle.vu { opacity: 1; transform: none; }
@@ -552,9 +586,14 @@ html.recherche-active { overflow: hidden; }
 @media (min-width: 900px) {
   .intro { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-rows: auto 1fr; grid-template-areas: "titre scene" "texte scene"; align-items: end; gap: 18px 40px; padding: 40px 0 56px; }
   .intro-texte { align-self: start; }
-  .intro-scene { height: clamp(440px, 64svh, 620px); align-self: center; }
+  .intro-bloc { align-self: center; }
+  .intro-scene { --h: clamp(440px, 60vh, 600px); }
+  @supports (height: 1svh) { .intro-scene { --h: clamp(440px, 60svh, 600px); } }
 }
-@media (prefers-reduced-motion: reduce) { .intro-arche, .intro-bulle { transition: none; } }
+/* mouvement réduit : l'éventail ne tourne plus, on passe d'un look à l'autre en fondu ; le doigt peut toujours faire glisser */
+.intro-arches { transition: opacity .3s ease; }
+.intro-arches.fondu { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .intro-arche { transition: none; } .intro-bulle { transform: none !important; transition: opacity .35s ease; } }
 
 /* Accessibilité (09/11/2026, revue UI/UX Pro Max) : lien « Aller au contenu », visible seulement au clavier */
 .aller-contenu { position: absolute; left: 16px; top: -60px; z-index: 1000; background: var(--noyer); color: var(--craie);
@@ -562,3 +601,24 @@ html.recherche-active { overflow: hidden; }
 .aller-contenu:focus { top: 12px; }
 main:focus { outline: none; }
 
+
+/* « Comment naît un look » mis en avant partout (09/11/2026) */
+.lien-atelier-entete { display: none; font-size: .95rem; color: var(--taupe); text-decoration: none; border-bottom: 1px solid var(--trait); padding-bottom: 2px; white-space: nowrap; }
+.lien-atelier-entete:hover { color: var(--noyer); border-color: var(--noyer); }
+@media (min-width: 880px) { .lien-atelier-entete { display: inline-block; margin-right: 14px; } }
+.menu-atelier { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; align-items: center; margin: 4px 0 22px; padding: 12px;
+  border-radius: 18px; background: rgba(242, 236, 227, .08); border: 1px solid rgba(233, 220, 195, .22); color: var(--avoine); text-decoration: none; }
+.menu-atelier:hover { background: rgba(242, 236, 227, .14); }
+.menu-atelier-img { width: 46px; aspect-ratio: 2 / 3; height: 69px; overflow: hidden; border-radius: 23px 23px 6px 6px; background: #F3E4D8; }
+.menu-atelier-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.menu-atelier-txt { display: grid; gap: 2px; }
+.menu-atelier-titre { font: 400 1.1rem/1.2 var(--titre); color: var(--laiton-clair); }
+.menu-atelier-sous { font-size: .85rem; color: rgba(242, 236, 227, .75); }
+.lien-atelier { display: grid; gap: 2px; margin: 22px 0 0; padding: 14px 44px 14px 16px; border: 1px solid var(--trait); border-radius: 16px; color: var(--noyer);
+  text-decoration: none; position: relative; background: var(--craie); }
+.lien-atelier::after { content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border: solid var(--laiton-texte, #7E5D2B);
+  border-width: 0 1.7px 1.7px 0; transform: translateY(-50%) rotate(-45deg); }
+.lien-atelier:hover { border-color: var(--laiton); }
+.lien-atelier-titre { font: 400 1.1rem/1.2 var(--titre); }
+.lien-atelier-sous { font-size: .88rem; color: var(--taupe); }
+.menu-sous-titre { margin: 0 0 6px; font: 400 1.05rem/1.3 var(--titre); color: var(--laiton-clair); }
