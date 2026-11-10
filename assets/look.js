@@ -932,6 +932,29 @@
     var exemples = [].slice.call(s.querySelectorAll('.cine-exemple'));
     var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false, vuJusquauBout = false;
     var pAff = 0, mesures = null;  // position affichée (amortie) et mesures en cache
+    var traits = [];
+    function pousser(tr, t) {  // trait de mesure tracé à t (0 → 1) ; rien du tout tant que t = 0
+      tr.g.style.opacity = t > 0 ? 1 : 0;
+      tr.l.setAttribute('x2', tr.x1 + (tr.x2 - tr.x1) * t); tr.l.setAttribute('y2', tr.y1 + (tr.y2 - tr.y1) * t);
+      if (tr.b2) tr.b2.style.opacity = t > .97 ? 1 : 0;
+      tr.g.classList.toggle('vu', t > .95);
+    }
+    // numéros de la démonstration : taille selon la largeur de l'image, jamais coupés au bord, écartés s'ils se touchent (10/11/2026)
+    function placerPastilles() {
+      var W = couche.offsetWidth, H = couche.offsetHeight;
+      if (!W || !v) return;
+      var t = Math.max(20, Math.min(30, Math.round(W * .08))), m = t / 2 + 2;
+      couche.style.setProperty('--pt', t + 'px');
+      var pts = v.articles.map(function (a) { return { x: a.pos[0] / 100 * W, y: a.pos[1] / 100 * H }; });
+      for (var passe = 0; passe < 6; passe++) {
+        for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
+          var dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, dd = Math.sqrt(dx * dx + dy * dy) || .01, min = t * 1.08;
+          if (dd < min) { var k = (min - dd) / 2 / dd; pts[i].x -= dx * k; pts[i].y -= dy * k; pts[j].x += dx * k; pts[j].y += dy * k; }
+        }
+        pts.forEach(function (q) { q.x = Math.max(m, Math.min(W - m, q.x)); q.y = Math.max(m, Math.min(H - m, q.y)); });
+      }
+      [].forEach.call(couche.children, function (b, i) { b.style.left = pts[i].x + 'px'; b.style.top = pts[i].y + 'px'; });
+    }
     function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function borne(x, a, b) { return Math.max(a, Math.min(b, x)); }
     function adoucir(t) { return 1 - Math.pow(1 - t, 3); }  // départ vif, arrivée douce
@@ -948,6 +971,11 @@
       imgP.src = RACINE + v.planche; imgP.style.background = v.fond;
       imgD.src = RACINE + v.image; imgD.alt = v.alt;
       calque.innerHTML = v.calque;
+      // chaque trait garde ses deux bouts : il pousse en déplaçant son 2e bout (plus fiable sur iPhone que les pointillés)
+      traits = [].map.call(calque.querySelectorAll('.cote'), function (g) {
+        var l = g.querySelector('.cote-trait'), b = g.querySelectorAll('line:not(.cote-trait)');
+        return { g: g, l: l, b1: b[0], b2: b[1], x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'), x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2') };
+      });
       if (lienLook) { lienLook.href = RACINE + v.lien; lienLook.textContent = v.titre; }
       couche.innerHTML = ''; zone.innerHTML = '';
       v.articles.forEach(function (a) {
@@ -958,6 +986,7 @@
         b.addEventListener('click', function () { choisi = a.n; choixManuel = true; fiche(); var f = zone.firstChild; if (f) f.classList.add('vu'); });
         couche.appendChild(b);
       });
+      placerPastilles();
       exemples.forEach(function (b, k) { b.setAttribute('aria-pressed', k === iv ? 'true' : 'false'); });
       etape = 0; vuJusquauBout = false; pAff = progres(); dessiner(true);
     }
@@ -993,9 +1022,7 @@
         // mouvement réduit : rien ne tourne ni ne glisse, chaque étape arrive en fondu (transitions CSS)
         planche.style.transform = 'none'; decor.style.transform = 'none';
         planche.style.opacity = k === 1 ? 1 : 0; decor.style.opacity = k >= 2 ? 1 : 0;
-        [].forEach.call(calque.querySelectorAll('.cote'), function (g) {
-          var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 0; g.classList.add('vu'); g.style.opacity = 1;
-        });
+        traits.forEach(function (tr) { pousser(tr, 1); });
         calque.style.opacity = k === 3 ? 1 : 0;
         balai.style.opacity = 0;
         montres = k === 4 ? n : 0;
@@ -1010,13 +1037,10 @@
         decor.style.opacity = p < 1.15 ? 0 : borne(arrivee * 2, 0, 1);
         // 3. le calque se trace et un trait laiton balaie l'image…
         var trace = borne((p - 2.1) / .6, 0, 1);
-        [].forEach.call(calque.querySelectorAll('.cote'), function (g, i) {
-          var t = borne(trace * 2 - i * .6, 0, 1);
-          var l = g.querySelector('.cote-trait'); if (l) l.style.strokeDashoffset = 1 - t;
-          g.classList.toggle('vu', t > .95); g.style.opacity = 1;
-        });
-        // … et s'efface complètement avant les numéros (09/11/2026 : les traits restaient sous les numéros)
-        calque.style.opacity = borne(1 - (p - 2.88) / .17, 0, 1);
+        traits.forEach(function (tr, i) { pousser(tr, borne(trace * 2 - i * .6, 0, 1)); });
+        // invisible pendant « La pièce » (10/11/2026 : on voyait déjà des bouts de traits sur iPhone),
+        // puis s'efface complètement avant les numéros (09/11/2026)
+        calque.style.opacity = p < 2.05 ? 0 : borne(1 - (p - 2.88) / .17, 0, 1);
         var bal = borne((p - 2) / .85, 0, 1);
         balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translate3d(0,' + (bal * (mesures.decor - 2)) + 'px,0)';
         // 4. les numéros apparaissent un par un
@@ -1037,8 +1061,8 @@
     }
     function demander() { if (!attente) { attente = true; requestAnimationFrame(dessiner); } }
     window.addEventListener('scroll', demander, { passive: true });
-    window.addEventListener('resize', function () { mesurer(); demander(); });
-    window.addEventListener('load', function () { mesurer(); demander(); });
+    window.addEventListener('resize', function () { mesurer(); placerPastilles(); demander(); });
+    window.addEventListener('load', function () { mesurer(); placerPastilles(); demander(); });
     pas.forEach(function (b) {
       b.addEventListener('click', function () {
         mesurer();
@@ -1230,8 +1254,43 @@
     }, { passive: true });
   }
 
+  /* ---------- Barre du haut fixe (10/11/2026, 4e version, choix final d'AIRKATE à 00 h 33) ----------
+     L'en-tête (logo, « Comment naît un look », Pinterest, Rechercher, Menu) reste fixé en haut de l'écran sur toutes
+     les pages. Pour éviter la « double barre », il remonte (animation douce) dès que la barre des pièces de l'accueil
+     (Tout, Noël, Salon…) arrive en haut, et revient quand on remonte au-dessus d'elle. Page À propos : il se range
+     pendant la démonstration, qui a besoin de tout l'écran. */
+  function decalEntete() {
+    var e = document.querySelector('header.entete');
+    return e && !e.classList.contains('range') ? e.offsetHeight : 0;
+  }
+  function enteteCollante() {
+    var e = document.querySelector('header.entete');
+    if (!e) return;
+    var barrePieces = document.querySelector('.filtres'), cine = document.querySelector('.cine'), repere = null, attente = false, etat = null;
+    if (barrePieces) {  // repère invisible à la place normale de la barre des pièces (elle colle en haut, lui non)
+      repere = document.createElement('div'); repere.setAttribute('aria-hidden', 'true'); repere.style.cssText = 'height:0;margin:0;padding:0';
+      barrePieces.parentNode.insertBefore(repere, barrePieces);
+    }
+    function verifier() {
+      attente = false;
+      var h = e.offsetHeight, range = false;
+      if (repere && repere.getBoundingClientRect().top <= h + 2) range = true;
+      if (cine) { var r = cine.getBoundingClientRect(); if (r.top < h && r.bottom > window.innerHeight * .5) range = true; }
+      var cl = document.documentElement.classList;
+      if (cl.contains('menu-actif') || cl.contains('recherche-active')) range = etat === null ? false : etat;
+      e.classList.toggle('ombre', window.scrollY > 4 && !range);
+      if (range === etat) return;
+      etat = range; e.classList.toggle('range', range);
+      document.documentElement.style.setProperty('--decal-entete', range ? '0px' : h + 'px');
+    }
+    function demander() { if (!attente) { attente = true; requestAnimationFrame(verifier); } }
+    window.addEventListener('scroll', demander, { passive: true });
+    window.addEventListener('resize', function () { etat = null; demander(); });
+    verifier();
+  }
+
   function demarrer() {
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
     // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
     var ordre = document.getElementById('looks-ordre');
     if (ordre && document.querySelector('.look')) {

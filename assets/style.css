@@ -28,7 +28,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
 
 /* En-tête */
-.entete { padding: 22px 0 10px; }
+.entete { padding: 14px 0 10px; }
 .entete .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .marque { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .marque img { display: block; height: 44px; width: auto; }
@@ -57,7 +57,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--laiton); outlin
 .retour { display: inline-block; margin: 18px 0 8px; color: var(--taupe); font-size: .95rem; text-decoration: none; }
 .retour:hover { color: var(--noyer); }
 .look { display: grid; gap: 28px; padding-bottom: 56px; }
-@media (min-width: 900px) { .look { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; } .look-visuel { position: sticky; top: 20px; } }
+@media (min-width: 900px) { .look { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; } .look-visuel { position: sticky; top: calc(var(--decal-entete, 0px) + 20px); transition: top .32s ease; } }
 
 .look-visuel { margin: 0; }
 .scene { position: relative; border-radius: 220px 220px 16px 16px; overflow: hidden; background: var(--trait); }
@@ -247,7 +247,7 @@ html.menu-actif { overflow: hidden; }
 /* Accueil : filtres par pièce et tri */
 .accueil-titre { padding-bottom: 26px; }
 .filtres {
-  position: sticky; top: 0; z-index: 5; background: var(--avoine);
+  position: sticky; top: var(--decal-entete, 0px); z-index: 5; background: var(--avoine); transition: top .32s cubic-bezier(.22, 1, .36, 1);
   border-bottom: 1px solid var(--trait); padding-top: 8px;
 }
 .filtres-liste { display: flex; flex-wrap: wrap; column-gap: 24px; min-width: 0; overflow-y: hidden; }
@@ -541,10 +541,12 @@ html.recherche-active { overflow: hidden; }
   box-shadow: 0 0 14px 3px rgba(233, 220, 195, .9); opacity: 0; pointer-events: none; }
 .couche-calque { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .couche-calque line { stroke: var(--noyer); stroke-width: 2px; vector-effect: non-scaling-stroke; }
-.couche-calque .cote-trait { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.couche-calque .cote { opacity: 0; }
 .couche-calque text { font: 600 3.4px/1 var(--texte); fill: var(--noyer); paint-order: stroke; stroke: var(--craie); stroke-width: .9px; opacity: 0; transition: opacity .3s ease; }
 .couche-calque .cote.vu text { opacity: 1; }
-.couche-numeros { position: absolute; inset: 0; }
+.couche-numeros { position: absolute; top: 0; left: 0; width: 100%; height: 100%; --pt: 26px; }
+.couche-numeros .pastille { width: var(--pt); height: var(--pt); font-size: calc(var(--pt) * .5); border-width: 1.5px; }
+#les-looks { scroll-margin-top: 64px; }
 .couche-numeros .pastille { opacity: 0; transform: translate(-50%, -50%) scale(.4); pointer-events: none;
   transition: opacity .25s ease, transform .4s cubic-bezier(.22, 1, .36, 1), background .2s ease; }
 .couche-numeros .pastille.vu { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
@@ -681,3 +683,18 @@ main:focus { outline: none; }
 .lien-atelier-titre { font: 400 1.1rem/1.2 var(--titre); }
 .lien-atelier-sous { font-size: .88rem; color: var(--taupe); }
 .menu-sous-titre { margin: 0 0 6px; font: 400 1.05rem/1.3 var(--titre); color: var(--laiton-clair); }
+
+/* Barre du haut fixe (10/11/2026, choix final d'AIRKATE) : l'en-tête reste en haut de l'écran sur toutes les pages ;
+   il remonte quand la barre des pièces de l'accueil arrive en haut (pas de double barre), et pendant la démonstration
+   de l'À propos. */
+.entete { position: -webkit-sticky; position: sticky; top: 0; z-index: 30; background: rgba(242, 236, 227, .94);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px); backdrop-filter: saturate(1.4) blur(10px);
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1), box-shadow .3s ease; }
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { .entete { background: var(--avoine); } }
+.entete.ombre { box-shadow: 0 1px 0 var(--trait), 0 10px 24px -22px rgba(46, 34, 25, .55); }
+.entete.range { transform: translateY(-105%); }
+@media (prefers-reduced-motion: reduce) {
+  .entete { transition: opacity .25s ease; }
+  .entete.range { transform: none; opacity: 0; pointer-events: none; }
+  .filtres { transition: none; }
+}
