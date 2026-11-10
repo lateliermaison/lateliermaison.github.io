@@ -1075,7 +1075,10 @@
         planche.style.opacity = tour < .55 ? 1 : borne(1 - (tour - .55) / .45, 0, 1);
         // 2. la pièce arrive de l'autre côté
         var arrivee = adoucir(borne((p - 1.15) / .75, 0, 1));
-        decor.style.transform = 'rotateY(' + ((1 - arrivee) * 100) + 'deg) scale(' + (1 + (p > 2 && p < 3 ? .025 : 0)) + ')';
+        // léger zoom « loupe » pendant la vérification (10/11/2026 : il monte et redescend en douceur avec le défilement, plus d'un coup)
+        var monte = borne((p - 2) / .35, 0, 1), descend = borne((p - 2.75) / .35, 0, 1);
+        var loupe = monte * monte * (3 - 2 * monte) * (1 - descend * descend * (3 - 2 * descend));
+        decor.style.transform = 'rotateY(' + ((1 - arrivee) * 100) + 'deg) scale(' + (1 + .025 * loupe).toFixed(4) + ')';
         decor.style.opacity = p < 1.15 ? 0 : borne(arrivee * 2, 0, 1);
         // 3. le calque se trace et un trait laiton balaie l'image…
         var trace = borne((p - 2.1) / .6, 0, 1);
