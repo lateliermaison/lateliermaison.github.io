@@ -717,3 +717,14 @@ main:focus { outline: none; }
   @supports (height: 1svh) { .look-visuel { width: min(100%, calc((100svh - var(--h-entete) - 64px) * 2 / 3)); } }
 }
 @media (min-width: 1500px) { .intro h1 { font-size: clamp(4rem, 3vw, 4.6rem); } .intro-scene { --h: clamp(420px, 66svh, 940px); } }
+
+/* ---------- Arches toujours parfaites et barre des pièces équilibrée (10/11/2026, test n°7, remarque d'AIRKATE) ----------
+   1. L'arrondi du haut était un rayon fixe (220 px, 180 px) : quand l'image devient plus large (grands écrans), le haut
+      devenait plat avec deux coins arrondis. L'arrondi suit maintenant la largeur : toujours un demi-cercle parfait.
+   2. Sur ordinateur, quand toutes les pièces tiennent sur la ligne, elles se répartissent sur toute la largeur
+      (au lieu de laisser un vide à droite) ; si elles ne tiennent pas, rien ne change (on fait glisser). */
+.scene { border-radius: 50% 50% 16px 16px / 33.333% 33.333% 16px 16px; }
+.carte figure { border-radius: 50% 50% 14px 14px / 33.333% 33.333% 14px 14px; }
+@media (min-width: 900px) { .filtres-liste { justify-content: space-between; } }
+/* 3. La recherche de l'accueil grandit avec le texte : le texte d'exemple n'est plus coupé sur un grand écran. */
+@media (min-width: 900px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 27rem); } }
