@@ -770,4 +770,9 @@ main:focus { outline: none; }
 html[data-page="accueil"]::view-transition-group(*), html[data-page="accueil"]::view-transition-old(*),
 html[data-page="accueil"]::view-transition-new(*) { animation: none; }
 html[data-page="accueil"]::view-transition-old(*) { display: none; }
+/* test 14 (10/11/2026, 21 h 45) : fondu doux à l'arrivée sur une page du site quand la transition du navigateur n'est
+   pas utilisée (iPhone/iPad, retour sur la grille). Opacité seulement : le fond crème reste, rien ne s'assombrit. */
+html.arrivee main { animation: arrivee .34s cubic-bezier(.22, 1, .36, 1) backwards; }
+@keyframes arrivee { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { html.arrivee main { animation: none; } }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }

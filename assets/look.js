@@ -464,6 +464,27 @@
       var f = c.querySelector('figure'); if (f) f.style.viewTransitionName = 'image-look';
     });
     window.addEventListener('pageshow', function () { grille.querySelectorAll('.carte figure').forEach(function (f) { f.style.viewTransitionName = ''; }); });
+    // test 14 (10/11/2026) : les pages des looks proches de l'écran sont préchargées (la page seule, ~25 ko : la grande
+    // image est déjà celle de la carte). Au toucher d'une carte, sa page part tout de suite. Rien si l'économie de
+    // données est demandée ou la connexion très lente.
+    var dejaCharge = {}, cnx = navigator.connection || {}, econome = cnx.saveData || /2g/.test(cnx.effectiveType || '');
+    function prechargerCarte(c) {
+      var u = c && c.href;
+      if (!u || dejaCharge[u]) return;
+      dejaCharge[u] = true;
+      try { fetch(u, { credentials: 'same-origin' }).catch(function () {}); } catch (e) {}
+    }
+    function carteDe(ev) { return ev.target.closest && ev.target.closest('.carte'); }
+    grille.addEventListener('touchstart', function (ev) { prechargerCarte(carteDe(ev)); }, { passive: true });
+    grille.addEventListener('pointerdown', function (ev) { prechargerCarte(carteDe(ev)); });
+    grille.addEventListener('mouseover', function (ev) { prechargerCarte(carteDe(ev)); });
+    if (!econome && 'IntersectionObserver' in window) {
+      var plus_tard = window.requestIdleCallback || function (f) { return setTimeout(f, 200); };
+      var obs = new IntersectionObserver(function (es) {
+        es.forEach(function (x) { if (x.isIntersecting && !x.target.hidden) plus_tard(function () { prechargerCarte(x.target); }); });
+      }, { rootMargin: '200px 0px' });
+      grille.querySelectorAll('.carte').forEach(function (c) { obs.observe(c); });
+    }
     var depart = p.get('piece') || 'tous';
     if (!liens.some(function (a) { return a.dataset.cat === depart; })) depart = 'tous';
     appliquer(depart, p.get('tri') === 'anciens' ? 'anciens' : 'recents', true);
