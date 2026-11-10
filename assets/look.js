@@ -177,8 +177,10 @@
   function voisins() { var a = document.querySelector('main .look'); return a ? { g: a.dataset.prec || '', d: a.dataset.suiv || '' } : { g: '', d: '' }; }
   function prechargerVoisins() { var v = voisins(); charger(v.g); charger(v.d); }
 
+  var carrouselPret = false;
   function carrousel() {
-    if (!document.querySelector('main .look')) return;
+    if (!document.querySelector('main .look') || carrouselPret) return;
+    carrouselPret = true;  // test 15 : la page d'un look peut arriver plusieurs fois sans rechargement → écouteurs posés une fois
     var x0 = null, y0 = 0, dx = 0, mode = null, W = innerWidth, fantome = null, page = null, enCours = false, hautFantome = 0;
     function bouger(els, v, anim) { els.forEach(function (el) { if (!el) return; el.style.transition = anim ? 'transform .26s cubic-bezier(.2,.7,.2,1)' : 'none'; el.style.transform = v === null ? '' : 'translateX(' + v + 'px)'; }); }
     function actuels() { return [document.querySelector('main .look')]; }
@@ -200,7 +202,7 @@
       });
     }
     document.addEventListener('touchstart', function (ev) {
-      if (enCours || ev.touches.length !== 1) { x0 = null; return; }
+      if (enCours || ev.touches.length !== 1 || !document.querySelector('main .look')) { x0 = null; return; }
       x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; dx = 0; mode = null; W = innerWidth;
     }, { passive: true });
     document.addEventListener('touchmove', function (ev) {
@@ -243,12 +245,12 @@
       if (hautFantome > 0 || !nl) window.scrollTo(0, y);
       else window.scrollTo(0, nl.getBoundingClientRect().top + window.scrollY);
       if (fantome) fantome.remove(); fantome = null; page = null; enCours = false;
-      initPage(neuf);
+      initPage(neuf); noterLook();
       if (!exclu() && window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {}
     }
     document.addEventListener('touchend', fin);
     document.addEventListener('touchcancel', fin);
-    addEventListener('popstate', function () { location.reload(); });
+    // bouton retour : géré par la navigation douce (navigationDouce), qui recharge la page quand elle ne sait pas faire
   }
 
   /* Passer d'un look à l'autre dans la pièce choisie (31/10/2026).
@@ -536,7 +538,7 @@
     m.addEventListener('click', function (ev) {
       if (ev.target.closest('[data-fermer]')) { fermer(); return; }
       var a = ev.target.closest('.menu-liste a');
-      if (a && appliquerFiltre) {
+      if (a && appliquerFiltre && document.getElementById('grille')) {
         ev.preventDefault(); fermer(false); appliquerFiltre(a.dataset.cat, null, true);
       }
     });
@@ -700,10 +702,11 @@
     } catch (e) {}
   }
 
-  var surAccueil = !!document.getElementById('grille');
+  // test 15 : l'accueil peut être mis de côté pendant qu'on regarde un look (navigation douce) → on vérifie à chaque fois
+  function surAccueilMaintenant() { return !!document.getElementById('grille'); }
   function ouvrirRecherche(texte) {
     var accueil = document.querySelector('.accueil-recherche input');
-    if (surAccueil && accueil) {
+    if (surAccueilMaintenant() && accueil) {
       accueil.closest('.accueil-titre').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
       if (texte != null) { accueil.value = texte; }
       setTimeout(function () { accueil.focus(); accueil.dispatchEvent(new Event('input')); }, RM ? 0 : 250);
@@ -796,7 +799,7 @@
     function choisir(o, ev) {
       var action = o.dataset.action;
       clearTimeout(minuteurCompte); compterRecherche(input.value.trim());
-      if (surAccueil && (action === 'piece' || action === 'tout')) {
+      if (surAccueilMaintenant() && (action === 'piece' || action === 'tout')) {
         if (ev) ev.preventDefault();
         afficher(''); if (dansPanneau) fermerPanneau(); input.blur();
         if (action === 'piece' && appliquerFiltre) appliquerFiltre(o.dataset.val, null, true);
@@ -832,12 +835,12 @@
       clearTimeout(minuteurCompte); compterRecherche(q);
       afficher('');
       // thème : la liste exacte des looks est calculée à la construction du site (build.py, THEMES_IDEES)
-      if (surAccueil && ids && ids.length && filtrerRecherche) {
+      if (surAccueilMaintenant() && ids && ids.length && filtrerRecherche) {
         input.value = q; if (effacer) effacer.hidden = false; input.blur();
         filtrerRecherche(ids, q);
         return;
       }
-      if (surAccueil && piece && appliquerFiltre) {
+      if (surAccueilMaintenant() && piece && appliquerFiltre) {
         input.value = ''; if (effacer) effacer.hidden = true; input.blur();
         appliquerFiltre(piece, null, true);
         return;
@@ -850,7 +853,7 @@
         if (r) INDEX.looks.forEach(function (l) {
           if (ids.indexOf(l.id) < 0 && l._articles.some(function (a) { return noter(a._m, r.q) >= 2.4 * r.q.length; })) ids.push(l.id);
         });
-        if (surAccueil && filtrerRecherche && ids.length) { input.blur(); filtrerRecherche(ids, q); }
+        if (surAccueilMaintenant() && filtrerRecherche && ids.length) { input.blur(); filtrerRecherche(ids, q); }
         else { input.focus(); rendre(); }
       });
     }
@@ -875,7 +878,7 @@
     });
     // accueil ouvert avec ?q=… (lien « Voir les looks pour … » depuis une autre page)
     var q = null; try { q = new URLSearchParams(location.search).get('q'); } catch (e) {}
-    if (q && surAccueil) charger_index().then(function (d) {
+    if (q && surAccueilMaintenant()) charger_index().then(function (d) {
       if (!d || !filtrerRecherche) return;
       var r = chercher(q), ids = r ? r.looks.map(function (x) { return x.l.id; }) : [];
       var champ = document.querySelector('.accueil-recherche input'); if (champ) champ.value = q;
@@ -1379,7 +1382,7 @@
     function verifier() {
       attente = false;
       var h = e.offsetHeight, range = false;
-      if (repere && repere.getBoundingClientRect().top <= h + 2) range = true;
+      if (repere && repere.isConnected && repere.getBoundingClientRect().top <= h + 2) range = true;
       if (cine) { var r = cine.getBoundingClientRect(); if (r.top < h && r.bottom > window.innerHeight * .5) range = true; }
       var cl = document.documentElement.classList;
       if (cl.contains('menu-actif') || cl.contains('recherche-active')) range = etat === null ? false : etat;
@@ -1401,20 +1404,146 @@
     window.scrollTo(0, 0);
   }
 
+  // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
+  function noterLook() {
+    var ordre = document.querySelector('main #looks-ordre');
+    if (!ordre || !document.querySelector('main .look')) return;
+    try {
+      var dd = JSON.parse(ordre.textContent), idl = location.pathname.split('/').pop().replace(/\.html$/, '');
+      dd.looks.forEach(function (l) { if (l.id === idl) { noterGouts(l.cats); try { localStorage.setItem('am_dernier_look', idl); } catch (e) {} } });
+    } catch (e) {}
+  }
+
+  /* ---------- Navigation douce grille ⇄ look (test 15, 10/11/2026, 22 h) ----------
+     Demande d'AIRKATE : une belle animation partout, même sur son iPhone 12. La transition de page du navigateur
+     assombrissait l'écran sur les iPhone moins récents ; ici, c'est le site qui fait le passage dans la même page :
+     - toucher une carte : la page du look (préchargée) remplace la grille, l'image part de la carte et s'agrandit
+       jusqu'à sa place (animation légère : seulement déplacement/agrandissement et fondu) ;
+     - « Tous les looks » (ou « Tous les looks Noël »…) et le bouton retour : la grille revient telle qu'on l'a laissée
+       (même pièce) et l'image repart se poser sur sa carte ;
+     - l'adresse change comme une vraie page (Google, partage, statistiques) ; le bouton « suivant » du navigateur marche.
+     Toute autre navigation (logo, menu, look voisin…) reste une page classique. En cas de souci : page classique. */
+  function navigationDouce() {
+    if (!window.history || !history.pushState || !window.fetch || !window.Promise) return;
+    var maison = null, enCours = false, absolu = false, lookAffiche = null;
+    function grilleAffichee() { return !!document.getElementById('grille'); }
+    function visible(r) { return r && r.width > 0 && r.bottom > 0 && r.top < innerHeight; }
+    function absolutiser() {  // en-tête, menu, pied : liens rendus absolus avant de changer d'adresse sans recharger
+      if (absolu) return; absolu = true;
+      document.querySelectorAll('a[href], img[src], form[action]').forEach(function (el) {
+        if (el.closest('main')) return;
+        var att = el.tagName === 'IMG' ? 'src' : el.tagName === 'FORM' ? 'action' : 'href', v = el.getAttribute(att);
+        if (!v || v.charAt(0) === '#' || /^[a-z][a-z0-9+.-]*:/i.test(v) || v.slice(0, 2) === '//') return;
+        el.setAttribute(att, new URL(v, location.href).href);
+      });
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+    }
+    function racine(r, accueil) {
+      RACINE = r; document.documentElement.setAttribute('data-racine', r);
+      if (accueil) document.documentElement.setAttribute('data-page', 'accueil'); else document.documentElement.removeAttribute('data-page');
+      document.documentElement.classList.remove('arrivee');
+    }
+    function attendre(an) { return new Promise(function (ok) { if (!an) return ok(); an.onfinish = function () { ok(); }; an.oncancel = function () { ok(); }; }); }
+    function fondu(el, de, a, duree, delai) {
+      if (RM || !el.animate) { el.style.opacity = a === 1 ? '' : String(a); return Promise.resolve(); }
+      var an = el.animate([{ opacity: de }, { opacity: a }], { duration: duree, delay: delai || 0, easing: 'ease-out', fill: 'both' });
+      return attendre(an).then(function () { el.style.opacity = a === 1 ? '' : String(a); an.cancel(); });
+    }
+    function volant(src, r, rayon) {
+      var v = document.createElement('div'), im = document.createElement('img');
+      v.className = 'volant'; v.setAttribute('aria-hidden', 'true');
+      v.style.cssText = 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;border-radius:' + rayon;
+      im.src = src; im.alt = ''; v.appendChild(im); document.body.appendChild(v);
+      return v;
+    }
+    function voler(v, de, vers, rayon) {  // la vignette prend sa place d'arrivée puis part de sa place de départ (transform seulement)
+      v.style.left = vers.left + 'px'; v.style.top = vers.top + 'px'; v.style.width = vers.width + 'px'; v.style.height = vers.height + 'px';
+      v.style.borderRadius = rayon;
+      var t = 'translate(' + (de.left - vers.left) + 'px,' + (de.top - vers.top) + 'px) scale(' + (de.width / vers.width) + ',' + (de.height / vers.height) + ')';
+      return attendre(v.animate([{ transform: t }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' }));
+    }
+    function compter() { if (!exclu() && window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {} }
+
+    function allerAuLook(carte, url, depuisHistorique) {
+      enCours = true; absolutiser();
+      var main = document.querySelector('main'), fig = carte.querySelector('figure'), img = carte.querySelector('img');
+      var r0 = fig && fig.getBoundingClientRect(), v = null;
+      if (!RM && visible(r0) && img) { v = volant(img.currentSrc || img.src, r0, getComputedStyle(fig).borderRadius); fig.style.visibility = 'hidden'; }
+      var page = charger(url);
+      Promise.all([page, fondu(main, 1, 0, 170)]).then(function (res) {
+        var p = res[0]; if (!p) throw 0;
+        maison = { main: main, titre: document.title, y: window.scrollY };
+        if (!depuisHistorique) { history.replaceState({ am: 'accueil' }, '', location.href); history.pushState({ am: 'look', url: url, id: carte.dataset.id }, '', url); }
+        racine('../', false); lookAffiche = carte.dataset.id;
+        var neuf = p.main.cloneNode(true); neuf.style.opacity = '0';
+        main.parentNode.replaceChild(neuf, main);
+        if (fig) fig.style.visibility = '';
+        document.title = p.titre; window.scrollTo(0, 0);
+        noterLook(); initPage(neuf); carrousel();
+        var sc = neuf.querySelector('.scene'), r1 = sc && sc.getBoundingClientRect(), fins = [fondu(neuf, 0, 1, 320, v ? 140 : 0)];
+        if (v && visible(r1)) { sc.style.visibility = 'hidden'; fins.push(voler(v, r0, r1, getComputedStyle(sc).borderRadius).then(function () { sc.style.visibility = ''; })); }
+        else if (v) fins.push(fondu(v, 1, 0, 200));
+        return Promise.all(fins).then(function () { if (v) v.remove(); enCours = false; compter(); });
+      }).catch(function () { location.href = url; });
+    }
+
+    function revenirALaGrille() {
+      enCours = true;
+      var main = document.querySelector('main'), m = maison, sc = main.querySelector('.scene'), r1 = sc && sc.getBoundingClientRect(), v = null;
+      maison = null;
+      if (!RM && visible(r1)) { var im = sc.querySelector('img'); v = volant(im.currentSrc || im.src, r1, getComputedStyle(sc).borderRadius); sc.style.visibility = 'hidden'; }
+      var bh = document.querySelector('.haut'); if (bh) bh.classList.remove('visible');
+      fondu(main, 1, 0, 170).then(function () {
+        racine('', true);
+        m.main.style.opacity = '0';
+        main.parentNode.replaceChild(m.main, main);
+        document.title = m.titre;
+        var carte = lookAffiche ? m.main.querySelector('.carte[data-id="' + lookAffiche + '"]') : null;
+        if (carte && carte.hidden) carte = null;
+        if (carte) carte.scrollIntoView({ block: 'center' }); else window.scrollTo(0, m.y);
+        window.dispatchEvent(new Event('scroll'));
+        var fins = [fondu(m.main, 0, 1, 320, v ? 100 : 0)], fg = carte && carte.querySelector('figure'), r0 = fg && fg.getBoundingClientRect();
+        if (v && visible(r0)) { fg.style.visibility = 'hidden'; fins.push(voler(v, r1, r0, getComputedStyle(fg).borderRadius).then(function () { fg.style.visibility = ''; })); }
+        else if (v) fins.push(fondu(v, 1, 0, 200));
+        return Promise.all(fins).then(function () { if (v) v.remove(); lookAffiche = null; enCours = false; compter(); });
+      }).catch(function () { location.reload(); });
+    }
+
+    document.addEventListener('click', function (ev) {
+      if (ev.defaultPrevented || ev.button || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      var a = ev.target.closest && ev.target.closest('a');
+      if (!a) return;
+      if (a.matches('#grille .carte') && grilleAffichee()) {
+        ev.preventDefault();
+        if (!enCours) allerAuLook(a, a.href, false);
+        return;
+      }
+      if (a.matches('main .retour') && maison && history.state && history.state.am === 'look') {
+        ev.preventDefault(); ev.stopPropagation();
+        if (!enCours) history.back();
+      }
+    }, true);
+
+    addEventListener('popstate', function (ev) {
+      var s = ev.state;
+      if (s && s.am === 'accueil' && maison && !grilleAffichee() && !enCours) { revenirALaGrille(); return; }
+      if (s && s.am === 'look' && grilleAffichee() && !enCours) {
+        var c = document.querySelector('#grille .carte[data-id="' + s.id + '"]');
+        if (c && !c.hidden) { allerAuLook(c, s.url, true); return; }
+      }
+      if (s && (s.am === 'accueil' || s.am === 'look')) { location.reload(); return; }
+      if (document.querySelector('main .look')) location.reload();  // glissement d'un look à l'autre : comme avant
+    });
+  }
+
   function demarrer() {
     hautDePage();
     bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
-    // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
-    var ordre = document.getElementById('looks-ordre');
-    if (ordre && document.querySelector('.look')) {
-      try {
-        var dd = JSON.parse(ordre.textContent), idl = location.pathname.split('/').pop().replace(/\.html$/, '');
-        dd.looks.forEach(function (l) { if (l.id === idl) { noterGouts(l.cats); try { localStorage.setItem('am_dernier_look', idl); } catch (e) {} } });
-      } catch (e) {}
-    }
+    noterLook();
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
     carrousel();
+    navigationDouce();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

@@ -776,3 +776,7 @@ html.arrivee main { animation: arrivee .34s cubic-bezier(.22, 1, .36, 1) backwar
 @keyframes arrivee { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { html.arrivee main { animation: none; } }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* test 15 (10/11/2026, 22 h) : navigation douce grille ⇄ look — la vignette qui vole de la carte au look et retour */
+.volant { position: fixed; z-index: 25; overflow: hidden; pointer-events: none; transform-origin: 0 0; will-change: transform; background: var(--trait); }
+.volant img { width: 100%; height: 100%; object-fit: cover; display: block; }
