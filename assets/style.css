@@ -472,15 +472,9 @@ html.recherche-active { overflow: hidden; }
   .mur-rang::-webkit-scrollbar { display: none; }
   .mur-pause { display: none; }
 }
-/* sélecteur d'exemples de « Comment naît un look » (une petite arche par look) */
+/* « Comment naît un look » : ligne « Exemple : … » (le sélecteur à petites arches est retiré le 10/11/2026) */
 .cine-choix { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 2px; }
 .cine-choix .atelier-chapo { flex: 1 1 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cine-exemples { display: flex; gap: 2px; margin-left: -6px; }
-.cine-exemple { width: 40px; height: 52px; border: 0; background: none; padding: 4px 6px; cursor: pointer; display: grid; place-items: center; }
-.cine-exemple img { width: 28px; height: 42px; object-fit: cover; border-radius: 14px 14px 4px 4px; display: block; opacity: .55;
-  outline: 2px solid transparent; outline-offset: 2px; transition: opacity .25s ease, outline-color .25s ease, transform .25s ease; }
-.cine-exemple:hover img { opacity: .9; }
-.cine-exemple[aria-pressed="true"] img { opacity: 1; outline-color: var(--laiton); transform: translateY(-2px); }
 .cine-cadre.change .cine-carte, .cine-cadre.revient .cine-carte { transition: opacity .3s ease; }
 .cine-cadre.change .cine-carte { opacity: 0 !important; }
 .apropos-tete h1 { font: 400 clamp(2.4rem, 6vw, 3.6rem)/1.05 var(--titre); margin: 0 0 18px; letter-spacing: -.01em; text-wrap: balance; }
@@ -568,8 +562,6 @@ html.recherche-active { overflow: hidden; }
   .cine h2 { margin-bottom: 8px; }
   .cine-texte { align-self: start; padding-top: 4vh; }
   .cine-choix .atelier-chapo { flex-basis: auto; }
-  .cine-exemple { width: 46px; height: 62px; }
-  .cine-exemple img { width: 34px; height: 51px; border-radius: 17px 17px 5px 5px; }
   .cine-etapes { grid-template-columns: none; gap: 0; margin-top: 26px; }
   .cine-pas { grid-template-columns: 34px minmax(0, 1fr); gap: 4px 14px; padding: 12px 0 0; }
   .cine-pas-n { width: 34px; height: 34px; font-size: 1.05rem; }

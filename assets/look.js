@@ -914,9 +914,11 @@
      La scène est collée en haut de l'écran ; le défilement de la page fait avancer une valeur p de 0 à 4 :
      0→1 la planche couchée se redresse, 1→2 elle pivote et laisse place à la pièce, 2→3 le calque se trace,
      3→4 les numéros apparaissent un par un. Toucher une étape fait défiler jusqu'à elle.
-     Le look change à chaque visite (jamais deux fois de suite le même, clé « am_atelier »), à chaque fois que la
-     démonstration recommence (on remonte au début après l'avoir vue jusqu'aux numéros), et au toucher d'une petite
-     arche sous le titre (09/11/2026, remplace le bouton « Un autre exemple »).
+     Choix de l'exemple (10/11/2026, demande d'AIRKATE : plus de petites arches pour choisir, pas de changement au
+     rechargement) : si le visiteur vient de regarder un look qui a sa démonstration, c'est celui-là (« voilà comment
+     est né ce look ») ; sinon un tirage pondéré par les pièces qu'il a regardées (clé « am_gouts »), le même pendant
+     tout un créneau de 3 heures. Le choix est retenu (clé « am_atelier2 ») : recharger la page montre le même exemple.
+     Il change seulement quand la démonstration recommence (on remonte au début après l'avoir vue jusqu'aux numéros).
      Défilement plus régulier : la scène suit la page avec un léger amorti (elle rattrape le défilement en douceur
      au lieu de sauter quand le doigt lance la page), et les mesures sont lues une seule fois. */
   function demoAtelier() {
@@ -929,7 +931,6 @@
     var imgP = planche.querySelector('img'), imgD = decor.querySelector('img'), calque = s.querySelector('.couche-calque');
     var couche = s.querySelector('.couche-numeros'), balai = s.querySelector('.cine-balayage'), zone = s.querySelector('.atelier-article');
     var lienLook = s.querySelector('.atelier-lien'), cadre = s.querySelector('.cine-cadre');
-    var exemples = [].slice.call(s.querySelectorAll('.cine-exemple'));
     var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false, vuJusquauBout = false;
     var pAff = 0, mesures = null;  // position affichée (amortie) et mesures en cache
     var traits = [];
@@ -967,7 +968,7 @@
     }
     function charger(k) {
       iv = (k + V.length) % V.length; v = V[iv]; choisi = 1; choixManuel = false;
-      try { localStorage.setItem('am_atelier', v.look); } catch (e) {}
+      try { localStorage.setItem('am_atelier2', JSON.stringify({ c: creneau, d: vu, look: v.look })); } catch (e) {}
       imgP.src = RACINE + v.planche; imgP.style.background = v.fond;
       imgD.src = RACINE + v.image; imgD.alt = v.alt;
       calque.innerHTML = v.calque;
@@ -987,7 +988,6 @@
         couche.appendChild(b);
       });
       placerPastilles();
-      exemples.forEach(function (b, k) { b.setAttribute('aria-pressed', k === iv ? 'true' : 'false'); });
       etape = 0; vuJusquauBout = false; pAff = progres(); dessiner(true);
     }
     // changer d'exemple en fondu (la scène s'efface, le nouveau look arrive à la même étape)
@@ -1070,11 +1070,20 @@
         window.scrollTo({ top: y, behavior: RM ? 'auto' : 'smooth' });
       });
     });
-    exemples.forEach(function (b, k) { b.addEventListener('click', function () { if (k !== iv) changerExemple(k); }); });
-    // look de cette visite : au hasard, jamais celui de la visite précédente
-    var dernier = null; try { dernier = localStorage.getItem('am_atelier'); } catch (e) {}
-    var possibles = V.map(function (x, k) { return k; }).filter(function (k) { return V.length < 2 || V[k].look !== dernier; });
-    charger(possibles[Math.floor(Math.random() * possibles.length)]);
+    // exemple de cette visite (voir en tête) : le look qu'on vient de regarder, sinon un tirage selon les goûts, stable 3 h
+    var creneau = Math.floor(Date.now() / (3 * 3600 * 1000)), vu = null, retenu = null;
+    try { vu = localStorage.getItem('am_dernier_look'); retenu = JSON.parse(localStorage.getItem('am_atelier2') || 'null'); } catch (e) {}
+    function rang(id) { for (var k = 0; k < V.length; k++) if (V[k].look === id) return k; return -1; }
+    var depart = -1;
+    if (retenu && retenu.c === creneau && retenu.d === vu) depart = rang(retenu.look);  // rien n'a changé : même exemple
+    if (depart < 0 && vu) depart = rang(vu);                                              // le look qu'on vient de regarder
+    if (depart < 0) {
+      var gouts = lireGouts(), r = hasard(creneau * 7 + 3)(), total = 0;
+      var poids = V.map(function (x) { var w = 1; (x.cats || []).forEach(function (c) { w += (gouts[c] || 0); }); total += w; return w; });
+      r *= total; depart = V.length - 1;
+      for (var k = 0; k < V.length; k++) { r -= poids[k]; if (r <= 0) { depart = k; break; } }
+    }
+    charger(depart);
   }
 
   /* ---------- Accueil : bandeau d'introduction (08/11/2026, interactif le 09/11/2026) ----------
@@ -1296,7 +1305,7 @@
     if (ordre && document.querySelector('.look')) {
       try {
         var dd = JSON.parse(ordre.textContent), idl = location.pathname.split('/').pop().replace(/\.html$/, '');
-        dd.looks.forEach(function (l) { if (l.id === idl) noterGouts(l.cats); });
+        dd.looks.forEach(function (l) { if (l.id === idl) { noterGouts(l.cats); try { localStorage.setItem('am_dernier_look', idl); } catch (e) {} } });
       } catch (e) {}
     }
     var main = document.querySelector('main');
