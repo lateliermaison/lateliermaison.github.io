@@ -765,4 +765,9 @@ main:focus { outline: none; }
 /* image du look sans arrivée (la carte n'était pas prête) : elle s'efface vite au lieu de traîner sur la page */
 ::view-transition-old(image-look):only-child { animation-duration: .2s; }
 @keyframes vt-entree { from { opacity: 0; transform: translateY(8px); } }
+/* test 13 (10/11/2026, 21 h) : arrivée sur l'accueil sans aucune animation de page (le script de l'accueil annule
+   déjà la transition ; ceci est la sécurité pour les navigateurs qui n'ont pas cet événement) */
+html[data-page="accueil"]::view-transition-group(*), html[data-page="accueil"]::view-transition-old(*),
+html[data-page="accueil"]::view-transition-new(*) { animation: none; }
+html[data-page="accueil"]::view-transition-old(*) { display: none; }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }

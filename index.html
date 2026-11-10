@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-racine="">
+<html lang="fr" data-racine="" data-page="accueil">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/look.js" defer></script>
 <link rel="expect" href="#accueil-pret" blocking="render">
+<script>addEventListener('pagereveal',function(e){var v=e.viewTransition;if(v){v.ready.catch(function(){});v.skipTransition();}});</script>
 <script data-goatcounter="https://lateliermaison.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -115,15 +116,6 @@
     <p class="intro-astuce" aria-hidden="true">Glisse ou touche une image pour changer de look</p>
   </div>
 </section>
-<script>(function(){try{var s=document.querySelector('.intro[data-intro]'),r=document.referrer;if(!s||!r||new URL(r).origin!==location.origin)return;
-var nv=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(nv&&nv.type==='reload')return;
-var m=JSON.parse(localStorage.getItem('am_intro')||'null');if(!m||m.c!==Math.floor(Date.now()/108e5))return;
-var d=JSON.parse(s.getAttribute('data-intro')),p=-1;d.forEach(function(x,k){if(x.id===m.look)p=k;});if(p<0)return;
-var A=s.querySelectorAll('.intro-arche'),n=A.length,X=s.querySelector('.intro-scene').offsetWidth<600?46:40;
-for(var i=0;i<n;i++){var o=i-p;while(o>n/2)o-=n;while(o<-n/2)o+=n;var b=Math.abs(o),a=A[i];a.style.transition='none';
-a.style.transform='translate(-50%, -50%) translateX('+(o*X)+'%) translateZ('+(-Math.min(b,2.5)*150)+'px) rotateY('+(-Math.max(-2.5,Math.min(2.5,o))*24)+'deg)';
-a.style.zIndex=Math.round(10-b*2);a.style.filter='brightness('+(1-Math.min(b,2)*.1)+') saturate('+(1-Math.min(b,2)*.15)+')';a.style.opacity=Math.max(0,Math.min(1,3-b));}
-}catch(e){}})();</script>
 <section class="accueil-titre" id="les-looks">
   <div class="accueil-texte">
     <h2 class="accueil-h">Les looks de l'atelier</h2>
@@ -255,7 +247,7 @@ a.style.zIndex=Math.round(10-b*2);a.style.filter='brightness('+(1-Math.min(b,2)*
   <p>Salon, 6 articles</p>
 </a>
 </section>
-<script>(function(){try{var r=sessionStorage.getItem('am_revenir');if(!r||!/^[\w-]+$/.test(r))return;var c=document.querySelector('.carte[data-id="'+r+'"]');if(!c)return;var f=c.querySelector('figure'),i=c.querySelector('img');if(i)i.loading='eager';c.scrollIntoView({block:'center'});if(f&&i&&'onpagereveal' in window)addEventListener('pagereveal',function(){if(!(i.complete&&i.naturalWidth))return;f.style.viewTransitionName='image-look';setTimeout(function(){f.style.viewTransitionName='';},1200);},{once:true});}catch(e){}})();</script>
+<script>(function(){try{var r=sessionStorage.getItem('am_revenir');if(!r||!/^[\w-]+$/.test(r))return;var c=document.querySelector('.carte[data-id="'+r+'"]');if(!c)return;var p=new URLSearchParams(location.search).get('piece');if(p&&/^[\w-]+$/.test(p)&&document.querySelector('.filtre[data-cat="'+p+'"]')){[].forEach.call(document.querySelectorAll('.grille .carte'),function(x){x.hidden=(' '+x.getAttribute('data-cats')+' ').indexOf(' '+p+' ')<0;});[].forEach.call(document.querySelectorAll('.filtre[data-cat]'),function(a){if(a.getAttribute('data-cat')===p)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current');});}if(c.hidden)return;var i=c.querySelector('img');if(i)i.loading='eager';c.scrollIntoView({block:'center'});}catch(e){}})();</script>
 <div id="accueil-pret" hidden></div>
 </main>
 <footer class="pied"><div class="wrap">

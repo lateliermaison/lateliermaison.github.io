@@ -477,8 +477,7 @@
         var fig = carteVue.querySelector('figure'), imC = fig && fig.querySelector('img');
         if (imC) imC.loading = 'eager';
         carteVue.scrollIntoView({ block: 'center' });
-        // l'image du look qui revient se poser sur sa carte : réglé par le petit script placé juste après la grille
-        // (build.py, test 12), car la page peut s'afficher avant que ce fichier-ci soit lu
+        // la pièce et la position sont déjà réglées avant l'affichage par le petit script placé après la grille (build.py)
       } else { var sl = document.getElementById('les-looks'); if (sl) sl.scrollIntoView({ block: 'start' }); }
     }
     liens.forEach(function (a) {
@@ -1316,19 +1315,9 @@
     avant = dep; retenir();
     var imDep = arches[dep] && arches[dep].querySelector('img');
     if (imDep) { imDep.loading = 'eager'; try { imDep.fetchPriority = 'high'; } catch (e) {} }
-    // entrée : les arches partent d'une pile et s'ouvrent en éventail. Test 12 (10/11/2026, 20 h) : seulement à l'arrivée
-    // sur le site. Quand on vient d'une autre page du site (logo, « Tous les looks »…), la page fait déjà son fondu :
-    // l'éventail est posé ouvert d'emblée, sinon on voyait « deux chargements » à la suite.
-    var depuisSite = false;
-    try { depuisSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
-    var navI = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
-    if (navI && navI.type === 'reload') depuisSite = false;
-    if (RM || depuisSite) {
-      arches.forEach(function (a) { a.style.transition = 'none'; });
-      placer(0, true); void boite.offsetWidth;
-      arches.forEach(function (a) { a.style.transition = ''; });
-      minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return;
-    }
+    // entrée : les arches partent d'une pile et s'ouvrent en éventail, à chaque arrivée sur l'accueil (test 13 : l'accueil
+    // s'affiche sans transition de page, donc plus de « double chargement »)
+    if (RM) { placer(0, true); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return; }
     requestAnimationFrame(function () { requestAnimationFrame(function () { placer(); }); });
     minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1300);
   }
