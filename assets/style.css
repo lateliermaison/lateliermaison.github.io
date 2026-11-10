@@ -728,3 +728,38 @@ main:focus { outline: none; }
 @media (min-width: 900px) { .filtres-liste { justify-content: space-between; } }
 /* 3. La recherche de l'accueil grandit avec le texte : le texte d'exemple n'est plus coupé sur un grand écran. */
 @media (min-width: 900px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 27rem); } }
+
+/* ---------- Étiquettes des mesures de « Comment naît un look » (10/11/2026, test n°8, remarque d'AIRKATE) ----------
+   Avant : texte dessiné dans le calque étiré, avec un contour blanc : il paraissait écrit à la main.
+   Maintenant : une petite étiquette claire et nette, comme les cotes d'un catalogue de meubles : le nom en Figtree,
+   la mesure en gras avec des chiffres alignés ; jamais tournée, jamais coupée par le bord de l'arche. */
+.couche-etiquettes { position: absolute; inset: 0; pointer-events: none; }
+.etiquette { position: absolute; display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap;
+  padding: 4px 8px 5px; border-radius: 999px; background: rgba(251, 248, 243, .95); color: var(--noyer);
+  box-shadow: 0 6px 18px -8px rgba(46, 34, 25, .55), 0 0 0 1px rgba(160, 123, 63, .28);
+  font: 500 11.5px/1.1 var(--texte); letter-spacing: .01em; font-variant-numeric: lining-nums tabular-nums;
+  opacity: 0; transition: opacity .3s ease, translate .4s cubic-bezier(.22, 1, .36, 1); translate: 0 4px; }
+.etiquette.vu { opacity: 1; translate: 0 0; }
+.etiquette-nom { color: var(--taupe); }
+.etiquette-mesure { font-weight: 700; }
+.etiquette.e-haut { transform: translate(-50%, calc(-100% - 9px)); }
+.etiquette.e-bas { transform: translate(-50%, 9px); }
+.etiquette.e-gauche { transform: translate(calc(-100% - 12px), -50%); }
+.etiquette.e-droite { transform: translate(12px, -50%); }
+@media (min-width: 900px) { .etiquette { font-size: 13.5px; padding: 6px 12px 7px; } }
+@media (prefers-reduced-motion: reduce) { .etiquette { transition: opacity .3s ease; translate: none; } }
+
+/* ---------- Passage d'une page à l'autre en douceur (10/11/2026, test n°9, demande d'AIRKATE) ----------
+   Au lieu d'un changement sec : la page s'efface et la suivante apparaît en glissant un peu ; l'image du look part de
+   sa carte et vient se poser à sa place sur la page du look (et revient sur sa carte avec « Tous les looks »).
+   Navigateurs récents (Safari 18.2+, Chrome 126+) ; ailleurs, rien ne change. « Réduire les animations » : coupé. */
+@view-transition { navigation: auto; }
+.entete { view-transition-name: entete; }
+.scene { view-transition-name: image-look; }
+::view-transition-old(root) { animation: vt-sortie .26s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: vt-entree .42s cubic-bezier(.22, 1, .36, 1) .06s both; }
+::view-transition-group(image-look) { animation-duration: .5s; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+::view-transition-old(image-look), ::view-transition-new(image-look) { animation-duration: .5s; }
+@keyframes vt-sortie { to { opacity: 0; } }
+@keyframes vt-entree { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }

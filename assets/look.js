@@ -275,7 +275,7 @@
       + '<span class="nav-piece">' + d.noms[cat] + ', ' + (i + 1) + ' sur ' + liste.length + '</span>'
       + (suiv ? '<a class="nav-suiv" href="' + suiv.id + '.html' + q + '" rel="next">Look n°' + suiv.numero + ' &#8250;</a>' : '<span></span>');
     var r = main.querySelector('.retour');
-    if (r) { r.href = '../index.html' + q; r.textContent = 'Tous les looks ' + d.noms[cat]; }
+    if (r) { r.href = '../index.html' + q + '#les-looks'; r.textContent = 'Tous les looks ' + d.noms[cat]; }
     var astuce = main.querySelector('.astuce-glisser');
     if (astuce && !prec && !suiv) astuce.remove();
   }
@@ -291,6 +291,14 @@
 
   function initPage(main) {
     adapterNavigation(main); pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
+    // « Tous les looks » : l'accueil se placera sur la carte de ce look (10/11/2026)
+    var r = main.querySelector('.retour');
+    if (r) r.addEventListener('click', function () {
+      try {
+        sessionStorage.setItem('am_revenir', location.pathname.split('/').pop().replace(/\.html$/, ''));
+        r.href = r.href.replace('#les-looks', '');  // l'accueil se place lui-même sur la carte (sans saut vers #les-looks)
+      } catch (e) {}
+    });
   }
 
 
@@ -437,10 +445,29 @@
     };
     if (annuler) annuler.addEventListener('click', function () { changer('tous'); var c = document.querySelector('.accueil-recherche input'); if (c) { c.value = ''; c.dispatchEvent(new Event('input')); } });
     var p = new URLSearchParams(location.search);
+    grille.addEventListener('click', function (ev) {
+      var c = ev.target.closest && ev.target.closest('.carte');
+      if (!c || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return;
+      grille.querySelectorAll('.carte figure').forEach(function (f) { f.style.viewTransitionName = ''; });
+      var f = c.querySelector('figure'); if (f) f.style.viewTransitionName = 'image-look';
+    });
+    window.addEventListener('pageshow', function () { grille.querySelectorAll('.carte figure').forEach(function (f) { f.style.viewTransitionName = ''; }); });
     var depart = p.get('piece') || 'tous';
     if (!liens.some(function (a) { return a.dataset.cat === depart; })) depart = 'tous';
     appliquer(depart, p.get('tri') === 'anciens' ? 'anciens' : 'recents', true);
     rail();
+    // retour depuis un look (« Tous les looks », 10/11/2026) : on revient sur la grille, à la carte du look qu'on regardait
+    var revenir = null; try { revenir = sessionStorage.getItem('am_revenir'); sessionStorage.removeItem('am_revenir'); } catch (e) {}
+    if (revenir || location.hash === '#les-looks') {
+      var carteVue = revenir ? grille.querySelector('.carte[data-id="' + revenir + '"]') : null;
+      if (carteVue && carteVue.hidden) carteVue = null;
+      if (carteVue) {
+        // l'image du look revient se poser sur sa carte (transition douce entre les pages, 10/11/2026)
+        var fig = carteVue.querySelector('figure');
+        if (fig) { fig.style.viewTransitionName = 'image-look'; setTimeout(function () { fig.style.viewTransitionName = ''; }, 1200); }
+        carteVue.scrollIntoView({ block: 'center' });
+      } else { var sl = document.getElementById('les-looks'); if (sl) sl.scrollIntoView({ block: 'start' }); }
+    }
     liens.forEach(function (a) {
       a.addEventListener('click', function (ev) { ev.preventDefault(); if (a.getAttribute('aria-current')) return; changer(a.dataset.cat); });
     });
@@ -928,7 +955,7 @@
     var V = d.variantes || []; if (!V.length) return;
     var pas = [].slice.call(s.querySelectorAll('.cine-pas')), textes = [].slice.call(s.querySelectorAll('.cine-etape'));
     var planche = s.querySelector('.cine-planche'), decor = s.querySelector('.cine-decor');
-    var imgP = planche.querySelector('img'), imgD = decor.querySelector('img'), calque = s.querySelector('.couche-calque');
+    var imgP = planche.querySelector('img'), imgD = decor.querySelector('img'), calque = s.querySelector('.couche-calque'), etiq = s.querySelector('.couche-etiquettes');
     var couche = s.querySelector('.couche-numeros'), balai = s.querySelector('.cine-balayage'), zone = s.querySelector('.atelier-article');
     var lienLook = s.querySelector('.atelier-lien'), cadre = s.querySelector('.cine-cadre');
     var v = null, iv = 0, choisi = 1, etape = 0, attente = false, choixManuel = false, vuJusquauBout = false;
@@ -939,6 +966,19 @@
       tr.l.setAttribute('x2', tr.x1 + (tr.x2 - tr.x1) * t); tr.l.setAttribute('y2', tr.y1 + (tr.y2 - tr.y1) * t);
       if (tr.b2) tr.b2.style.opacity = t > .97 ? 1 : 0;
       tr.g.classList.toggle('vu', t > .95);
+      if (tr.e) tr.e.classList.toggle('vu', t > .95);
+    }
+    // étiquettes des mesures : jamais coupées par le bord de l'arche (10/11/2026)
+    function caleEtiquettes() {
+      if (!etiq) return;
+      var W = etiq.offsetWidth; if (!W) return;
+      [].forEach.call(etiq.children, function (el) {
+        el.style.marginLeft = '0px';
+        var g = el.offsetLeft, l = el.offsetWidth, m = 8;
+        var gauche = g + (el.classList.contains('e-gauche') ? -l - 12 : el.classList.contains('e-droite') ? 12 : -l / 2);
+        var dx = gauche < m ? m - gauche : (gauche + l > W - m ? W - m - gauche - l : 0);
+        el.style.marginLeft = dx + 'px';
+      });
     }
     // numéros de la démonstration : taille selon la largeur de l'image, jamais coupés au bord, écartés s'ils se touchent (10/11/2026)
     function placerPastilles() {
@@ -972,11 +1012,13 @@
       imgP.src = RACINE + v.planche; imgP.style.background = v.fond;
       imgD.src = RACINE + v.image; imgD.alt = v.alt;
       calque.innerHTML = v.calque;
+      if (etiq) etiq.innerHTML = v.etiquettes || '';
       // chaque trait garde ses deux bouts : il pousse en déplaçant son 2e bout (plus fiable sur iPhone que les pointillés)
-      traits = [].map.call(calque.querySelectorAll('.cote'), function (g) {
+      traits = [].map.call(calque.querySelectorAll('.cote'), function (g, i) {
         var l = g.querySelector('.cote-trait'), b = g.querySelectorAll('line:not(.cote-trait)');
-        return { g: g, l: l, b1: b[0], b2: b[1], x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'), x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2') };
+        return { g: g, l: l, b1: b[0], b2: b[1], e: etiq ? etiq.children[i] : null, x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'), x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2') };
       });
+      caleEtiquettes();
       if (lienLook) { lienLook.href = RACINE + v.lien; lienLook.textContent = v.titre; }
       couche.innerHTML = ''; zone.innerHTML = '';
       v.articles.forEach(function (a) {
@@ -1023,7 +1065,7 @@
         planche.style.transform = 'none'; decor.style.transform = 'none';
         planche.style.opacity = k === 1 ? 1 : 0; decor.style.opacity = k >= 2 ? 1 : 0;
         traits.forEach(function (tr) { pousser(tr, 1); });
-        calque.style.opacity = k === 3 ? 1 : 0;
+        calque.style.opacity = k === 3 ? 1 : 0; if (etiq) etiq.style.opacity = calque.style.opacity;
         balai.style.opacity = 0;
         montres = k === 4 ? n : 0;
       } else {
@@ -1040,7 +1082,7 @@
         traits.forEach(function (tr, i) { pousser(tr, borne(trace * 2 - i * .6, 0, 1)); });
         // invisible pendant « La pièce » (10/11/2026 : on voyait déjà des bouts de traits sur iPhone),
         // puis s'efface complètement avant les numéros (09/11/2026)
-        calque.style.opacity = p < 2.05 ? 0 : borne(1 - (p - 2.88) / .17, 0, 1);
+        calque.style.opacity = p < 2.05 ? 0 : borne(1 - (p - 2.88) / .17, 0, 1); if (etiq) etiq.style.opacity = calque.style.opacity;
         var bal = borne((p - 2) / .85, 0, 1);
         balai.style.opacity = bal > 0 && bal < 1 ? .9 : 0; balai.style.transform = 'translate3d(0,' + (bal * (mesures.decor - 2)) + 'px,0)';
         // 4. les numéros apparaissent un par un
@@ -1061,8 +1103,8 @@
     }
     function demander() { if (!attente) { attente = true; requestAnimationFrame(dessiner); } }
     window.addEventListener('scroll', demander, { passive: true });
-    window.addEventListener('resize', function () { mesurer(); placerPastilles(); demander(); });
-    window.addEventListener('load', function () { mesurer(); placerPastilles(); demander(); });
+    window.addEventListener('resize', function () { mesurer(); placerPastilles(); caleEtiquettes(); demander(); });
+    window.addEventListener('load', function () { mesurer(); placerPastilles(); caleEtiquettes(); demander(); });
     pas.forEach(function (b) {
       b.addEventListener('click', function () {
         mesurer();
@@ -1153,11 +1195,11 @@
       k = ((k % n) + n) % n; num = 0; cacherBulle();
       if (RM && k !== avant) {  // mouvement réduit : fondu
         boite.classList.add('fondu');
-        setTimeout(function () { avant = k; placer(0, true); boite.classList.remove('fondu'); }, 300);
+        setTimeout(function () { avant = k; placer(0, true); retenir(); boite.classList.remove('fondu'); }, 300);
         minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 900);
         return;
       }
-      avant = k; placer();
+      avant = k; placer(); retenir();
       minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1000);
     }
     // défilement automatique : 3 numéros par look, puis look suivant ; arrêt après 2 tours
@@ -1202,7 +1244,7 @@
       var cible = avant + pas;
       // repartir de la position glissée pour que l'arche finisse son mouvement en douceur
       arches.forEach(function (a, i) { anciens[i] = decalage(i, f); });
-      avant = ((cible % n) + n) % n; num = 0; placer();
+      avant = ((cible % n) + n) % n; num = 0; placer(); retenir();
       clearTimeout(minuteur); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 900);
       setTimeout(function () { bouge = false; }, 60);
     }
@@ -1241,6 +1283,21 @@
     // le bouton « Commencer à s'inspirer » descend en douceur jusqu'aux looks
     var b = s.querySelector('.intro-bouton'), cible = document.getElementById('les-looks');
     if (b && cible) b.addEventListener('click', function (ev) { ev.preventDefault(); cible.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' }); });
+    // look de départ (10/11/2026, demande d'AIRKATE) : plus toujours le dernier publié. Tirage selon les pièces regardées
+    // (« am_gouts », sans le look qu'on vient de quitter), le même pendant un créneau de 3 h. Le look à l'écran est
+    // retenu (« am_intro ») : recharger la page remontre le même. Le défilement automatique continue comme avant.
+    var creneauI = Math.floor(Date.now() / (3 * 3600 * 1000)), memo = null, vuI = null;
+    try { memo = JSON.parse(localStorage.getItem('am_intro') || 'null'); vuI = localStorage.getItem('am_dernier_look'); } catch (e) {}
+    function retenir() { try { localStorage.setItem('am_intro', JSON.stringify({ c: creneauI, look: d[avant].id })); } catch (e) {} }
+    var dep = -1;
+    if (memo && memo.c === creneauI) d.forEach(function (x, k) { if (x.id === memo.look) dep = k; });
+    if (dep < 0) {
+      var gI = lireGouts(), totalI = 0;
+      var poidsI = d.map(function (x) { var w = x.id === vuI ? 0 : 1; if (w) (x.cats || []).forEach(function (c) { w += (gI[c] || 0); }); totalI += w; return w; });
+      var rI = hasard(creneauI * 11 + 5)() * totalI; dep = 0;
+      for (var kI = 0; kI < d.length; kI++) { rI -= poidsI[kI]; if (rI < 0) { dep = kI; break; } }
+    }
+    avant = dep; retenir();
     // entrée : les arches partent d'une pile et s'ouvrent en éventail
     if (RM) { placer(0, true); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return; }
     requestAnimationFrame(function () { requestAnimationFrame(function () { placer(); }); });
@@ -1298,7 +1355,15 @@
     verifier();
   }
 
+  function hautDePage() {
+    if (!document.querySelector('main .look') || location.hash || /[?&]amazon=/.test(location.search)) return;
+    var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+    if (nav && nav.type !== 'navigate') return;  // rechargement, retour arrière : le navigateur garde la position
+    window.scrollTo(0, 0);
+  }
+
   function demarrer() {
+    hautDePage();
     bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
     // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
     var ordre = document.getElementById('looks-ordre');
