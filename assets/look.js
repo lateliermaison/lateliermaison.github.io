@@ -291,8 +291,35 @@
     else if (li) setTimeout(function () { li.click(); li.scrollIntoView({ block: 'center' }); }, 80);
   }
 
+  /* Numéros qui se touchent (test 16) : on les écarte juste assez l'un de l'autre, à partir de leur place d'origine,
+     selon leur taille réelle à l'écran (recalculé quand l'écran change de taille). */
+  function espacerPastilles(main) {
+    var sc = main.querySelector('.scene'), ps = sc ? [].slice.call(sc.querySelectorAll('.pastille')) : [];
+    if (!ps.length) return;
+    function faire() {
+      var W = sc.offsetWidth, H = sc.offsetHeight, t = ps[0].offsetWidth;
+      if (!W || !H || !t) return;
+      var pts = ps.map(function (b) {
+        if (!b.dataset.x) { b.dataset.x = parseFloat(b.style.left); b.dataset.y = parseFloat(b.style.top); }
+        return { x: b.dataset.x / 100 * W, y: b.dataset.y / 100 * H };
+      });
+      var min = t * 1.12, m = t / 2 + 3;
+      for (var passe = 0; passe < 8; passe++) {
+        for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
+          var dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, dd = Math.sqrt(dx * dx + dy * dy) || .01;
+          if (dd < min) { var k = (min - dd) / 2 / dd; pts[i].x -= dx * k; pts[i].y -= dy * k; pts[j].x += dx * k; pts[j].y += dy * k; }
+        }
+        pts.forEach(function (q) { q.x = Math.max(m, Math.min(W - m, q.x)); q.y = Math.max(m, Math.min(H - m, q.y)); });
+      }
+      ps.forEach(function (b, i) { b.style.left = (pts[i].x / W * 100).toFixed(2) + '%'; b.style.top = (pts[i].y / H * 100).toFixed(2) + '%'; });
+    }
+    faire();
+    var im = sc.querySelector('img'); if (im && !im.complete) im.addEventListener('load', faire, { once: true });
+    if (!main._espace) { main._espace = true; var tm = null; window.addEventListener('resize', function () { if (main.isConnected) { clearTimeout(tm); tm = setTimeout(faire, 120); } }); }
+  }
+
   function initPage(main) {
-    adapterNavigation(main); pastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
+    adapterNavigation(main); pastilles(main); espacerPastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
     // « Tous les looks » : l'accueil se placera sur la carte de ce look (10/11/2026)
     var r = main.querySelector('.retour');
     if (r) r.addEventListener('click', function () {
@@ -1404,6 +1431,18 @@
     window.scrollTo(0, 0);
   }
 
+  /* Numéros du look qui apparaissent l'un après l'autre, vite, dans un ordre mélangé (test 16, demande d'AIRKATE :
+     « ratatata », comme dans « Comment naît un look »), au lieu de tous d'un coup. */
+  function apparitionPastilles(main, delai) {
+    var ps = [].slice.call(main.querySelectorAll('.scene .pastille'));
+    if (RM || !ps.length || !ps[0].animate) return;
+    for (var k = ps.length - 1; k > 0; k--) { var r = Math.floor(Math.random() * (k + 1)), t = ps[k]; ps[k] = ps[r]; ps[r] = t; }
+    ps.forEach(function (p, i) {
+      p.animate([{ opacity: 0, transform: 'translate(-50%, -50%) scale(.3)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1.12)', offset: .7 }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }],
+        { duration: 360, delay: (delai || 0) + Math.floor(i / 2) * 60 + (i % 2) * 22, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'backwards' });
+    });
+  }
+
   // pages de look : on retient les pièces regardées (pour les idées de l'accueil)
   function noterLook() {
     var ordre = document.querySelector('main #looks-ordre');
@@ -1456,42 +1495,85 @@
       im.src = src; im.alt = ''; v.appendChild(im); document.body.appendChild(v);
       return v;
     }
-    function voler(v, de, vers, rayon) {  // la vignette prend sa place d'arrivée puis part de sa place de départ (transform seulement)
+    // test 16 (10/11/2026, 22 h 30) : plus fluide. 1) La vignette part TOUT DE SUITE vers sa place prévue (on connaît
+    // la place de l'image sur la page d'un look : mesurée la dernière fois, sinon calculée) au lieu d'attendre immobile
+    // pendant que la page change ; 2) quand la vraie place est mesurée, elle corrige sa route sans s'arrêter ;
+    // 3) l'animation tourne à part du travail de la page (elle ne saccade pas pendant le changement) ;
+    // 4) la barre du haut et la barre des pièces changent en fondu, sans glisser (c'était le « tac vers le haut »).
+    var DUREE_VOL = 620, COURBE_VOL = 'cubic-bezier(.22, .9, .26, 1)';
+    function lancerVol(v, vers, rayon, duree, courbe) {  // de là où la vignette est à l'écran jusqu'à « vers »
+      var de = v.getBoundingClientRect();
+      v.getAnimations().forEach(function (a) { a.cancel(); });
       v.style.left = vers.left + 'px'; v.style.top = vers.top + 'px'; v.style.width = vers.width + 'px'; v.style.height = vers.height + 'px';
-      v.style.borderRadius = rayon;
+      if (rayon) v.style.borderRadius = rayon;
       var t = 'translate(' + (de.left - vers.left) + 'px,' + (de.top - vers.top) + 'px) scale(' + (de.width / vers.width) + ',' + (de.height / vers.height) + ')';
-      return attendre(v.animate([{ transform: t }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' }));
+      v._vol = { debut: performance.now(), duree: duree, vers: vers };
+      v._fin = attendre(v.animate([{ transform: t }, { transform: 'none' }], { duration: duree, easing: courbe || COURBE_VOL, fill: 'both' }));
+      return v._fin;
     }
+    function corrigerVol(v, vraie, rayon) {  // la vraie place est connue : on ne relance que si l'estimation était fausse
+      var e = v._vol && v._vol.vers;
+      if (e && Math.abs(e.left - vraie.left) < 2 && Math.abs(e.top - vraie.top) < 2 && Math.abs(e.width - vraie.width) < 2) return v._fin;
+      var reste = v._vol ? Math.max(300, v._vol.duree - (performance.now() - v._vol.debut)) : DUREE_VOL;
+      return lancerVol(v, vraie, rayon, reste, 'cubic-bezier(.25, .8, .3, 1)');
+    }
+    function rect(l, t, w, h) { return { left: l, top: t, width: w, height: h }; }
+    function placeSceneEstimee() {  // où sera l'image en haut de la page d'un look
+      try {
+        var m = JSON.parse(sessionStorage.getItem('am_scene') || 'null');
+        if (m && m.w === innerWidth && m.h === innerHeight) return m.r;
+      } catch (e) {}
+      var w = Math.min(innerWidth - 32, (innerHeight - 40) * 2 / 3);
+      if (innerWidth >= 900) w = Math.min((Math.min(innerWidth, 1240) - 120) / 2, (innerHeight - 130) * 2 / 3);
+      return rect(innerWidth >= 900 ? Math.max(24, (innerWidth - Math.min(innerWidth, 1240)) / 2 + 40) : (innerWidth - w) / 2, 110, w, w * 1.5);
+    }
+    function retenirScene(sc) {  // la vraie place, pour la prochaine fois
+      if (!sc || window.scrollY > 2) return;
+      var r = sc.getBoundingClientRect();
+      if (r.width) try { sessionStorage.setItem('am_scene', JSON.stringify({ w: innerWidth, h: innerHeight, r: rect(r.left, r.top, r.width, r.height) })); } catch (e) {}
+    }
+    function passage(oui) { document.documentElement.classList.toggle('passage', oui); }
     function compter() { if (!exclu() && window.goatcounter && window.goatcounter.count) try { window.goatcounter.count({ path: location.pathname }); } catch (e) {} }
+    function plusTard(f) { requestAnimationFrame(function () { setTimeout(f, 0); }); }
 
     function allerAuLook(carte, url, depuisHistorique) {
-      enCours = true; absolutiser();
+      enCours = true; absolutiser(); passage(true);
       var main = document.querySelector('main'), fig = carte.querySelector('figure'), img = carte.querySelector('img');
       var r0 = fig && fig.getBoundingClientRect(), v = null;
-      if (!RM && visible(r0) && img) { v = volant(img.currentSrc || img.src, r0, getComputedStyle(fig).borderRadius); fig.style.visibility = 'hidden'; }
+      if (!RM && visible(r0) && img) {
+        v = volant(img.currentSrc || img.src, r0, getComputedStyle(fig).borderRadius); fig.style.visibility = 'hidden';
+        lancerVol(v, placeSceneEstimee(), '', DUREE_VOL);  // elle part tout de suite
+      }
       var page = charger(url);
       Promise.all([page, fondu(main, 1, 0, 170)]).then(function (res) {
         var p = res[0]; if (!p) throw 0;
-        maison = { main: main, titre: document.title, y: window.scrollY };
+        maison = { main: main, titre: document.title, y: window.scrollY, carte: r0 };
         if (!depuisHistorique) { history.replaceState({ am: 'accueil' }, '', location.href); history.pushState({ am: 'look', url: url, id: carte.dataset.id }, '', url); }
         racine('../', false); lookAffiche = carte.dataset.id;
         var neuf = p.main.cloneNode(true); neuf.style.opacity = '0';
         main.parentNode.replaceChild(neuf, main);
         if (fig) fig.style.visibility = '';
         document.title = p.titre; window.scrollTo(0, 0);
-        noterLook(); initPage(neuf); carrousel();
-        var sc = neuf.querySelector('.scene'), r1 = sc && sc.getBoundingClientRect(), fins = [fondu(neuf, 0, 1, 320, v ? 140 : 0)];
-        if (v && visible(r1)) { sc.style.visibility = 'hidden'; fins.push(voler(v, r0, r1, getComputedStyle(sc).borderRadius).then(function () { sc.style.visibility = ''; })); }
-        else if (v) fins.push(fondu(v, 1, 0, 200));
-        return Promise.all(fins).then(function () { if (v) v.remove(); enCours = false; compter(); });
+        var sc = neuf.querySelector('.scene'), r1 = sc && sc.getBoundingClientRect(), fins = [fondu(neuf, 0, 1, 340, v ? 60 : 0)];
+        retenirScene(sc);
+        if (v && visible(r1)) {
+          sc.style.visibility = 'hidden';
+          fins.push(corrigerVol(v, r1, getComputedStyle(sc).borderRadius).then(function () { sc.style.visibility = ''; apparitionPastilles(neuf, 0); }));
+        } else { if (v) fins.push(fondu(v, 1, 0, 200)); apparitionPastilles(neuf, 120); }
+        plusTard(function () { noterLook(); initPage(neuf); carrousel(); });  // pendant que l'animation tourne
+        return Promise.all(fins).then(function () { if (v) v.remove(); passage(false); enCours = false; compter(); });
       }).catch(function () { location.href = url; });
     }
 
     function revenirALaGrille() {
-      enCours = true;
+      enCours = true; passage(true);
       var main = document.querySelector('main'), m = maison, sc = main.querySelector('.scene'), r1 = sc && sc.getBoundingClientRect(), v = null;
       maison = null;
-      if (!RM && visible(r1)) { var im = sc.querySelector('img'); v = volant(im.currentSrc || im.src, r1, getComputedStyle(sc).borderRadius); sc.style.visibility = 'hidden'; }
+      if (!RM && visible(r1)) {
+        var im = sc.querySelector('img'); v = volant(im.currentSrc || im.src, r1, getComputedStyle(sc).borderRadius); sc.style.visibility = 'hidden';
+        var c0 = m.carte;  // la grille revient exactement où on l'a laissée : la carte sera à sa place d'avant, on y va tout de suite
+        if (c0 && c0.width) lancerVol(v, rect(c0.left, c0.top, c0.width, c0.height), '', DUREE_VOL);
+      }
       var bh = document.querySelector('.haut'); if (bh) bh.classList.remove('visible');
       fondu(main, 1, 0, 170).then(function () {
         racine('', true);
@@ -1500,12 +1582,14 @@
         document.title = m.titre;
         var carte = lookAffiche ? m.main.querySelector('.carte[data-id="' + lookAffiche + '"]') : null;
         if (carte && carte.hidden) carte = null;
-        if (carte) carte.scrollIntoView({ block: 'center' }); else window.scrollTo(0, m.y);
-        window.dispatchEvent(new Event('scroll'));
-        var fins = [fondu(m.main, 0, 1, 320, v ? 100 : 0)], fg = carte && carte.querySelector('figure'), r0 = fg && fg.getBoundingClientRect();
-        if (v && visible(r0)) { fg.style.visibility = 'hidden'; fins.push(voler(v, r1, r0, getComputedStyle(fg).borderRadius).then(function () { fg.style.visibility = ''; })); }
+        window.scrollTo(0, m.y);  // comme dans une appli : on retrouve la grille exactement comme on l'a quittée
+        var fg0 = carte && carte.querySelector('figure'), rv = fg0 && fg0.getBoundingClientRect();
+        if (carte && !(rv && rv.top >= 0 && rv.bottom <= innerHeight)) carte.scrollIntoView({ block: 'center' });  // carte hors de l'écran (rare)
+        window.dispatchEvent(new Event('scroll'));  // barres du haut réglées avant la première image affichée
+        var fins = [fondu(m.main, 0, 1, 340, v ? 60 : 0)], fg = carte && carte.querySelector('figure'), r0 = fg && fg.getBoundingClientRect();
+        if (v && visible(r0)) { fg.style.visibility = 'hidden'; fins.push(corrigerVol(v, r0, getComputedStyle(fg).borderRadius).then(function () { fg.style.visibility = ''; })); }
         else if (v) fins.push(fondu(v, 1, 0, 200));
-        return Promise.all(fins).then(function () { if (v) v.remove(); lookAffiche = null; enCours = false; compter(); });
+        return Promise.all(fins).then(function () { if (v) v.remove(); lookAffiche = null; passage(false); enCours = false; compter(); });
       }).catch(function () { location.reload(); });
     }
 
@@ -1541,7 +1625,7 @@
     bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
     noterLook();
     var main = document.querySelector('main');
-    if (main) { if (main.querySelector('.look')) initPage(main); else liensAmazon(main); }
+    if (main) { if (main.querySelector('.look')) { initPage(main); apparitionPastilles(main, 180); } else liensAmazon(main); }
     carrousel();
     navigationDouce();
   }

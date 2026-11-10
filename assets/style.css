@@ -780,3 +780,14 @@ html.arrivee main { animation: arrivee .34s cubic-bezier(.22, 1, .36, 1) backwar
 /* test 15 (10/11/2026, 22 h) : navigation douce grille ⇄ look — la vignette qui vole de la carte au look et retour */
 .volant { position: fixed; z-index: 25; overflow: hidden; pointer-events: none; transform-origin: 0 0; will-change: transform; background: var(--trait); }
 .volant img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* test 16 : pendant le passage grille ⇄ look, la barre du haut apparaît/disparaît en fondu (sans glisser) et la barre
+   des pièces ne glisse pas : plus de petit « tac vers le haut » pendant que l'image vole */
+html.passage .entete { transition: opacity .3s ease, transform 0s; }
+html.passage .entete.range { opacity: 0; transition: opacity .2s ease, transform 0s .2s; }
+html.passage .filtres, html.passage .look-visuel { transition: none; }
+/* test 16 : numéros des looks à la taille de l'image (AIRKATE, 22 h 26 : trop grands sur iPhone, ils cachent des articles,
+   certains se touchent). 34 px sur grand écran, environ 26 px sur iPhone ; zone de toucher agrandie autour (invisible). */
+.scene { container-type: inline-size; }
+.scene .pastille { width: clamp(22px, 7.3cqi, 34px); height: clamp(22px, 7.3cqi, 34px); font-size: clamp(.68rem, 3.6cqi, .95rem); }
+@container (max-width: 480px) { .scene .pastille { border-width: 1.5px; box-shadow: 0 0 0 2px rgba(251, 248, 243, .35); } }
+.scene .pastille::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; }
