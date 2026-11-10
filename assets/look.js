@@ -299,6 +299,18 @@
         r.href = r.href.replace('#les-looks', '');  // l'accueil se place lui-même sur la carte (sans saut vers #les-looks)
       } catch (e) {}
     });
+    // test 12 (10/11/2026) : l'image du look ne « vole » que vers un autre look ou vers sa carte (« Tous les looks »).
+    // Vers le logo, le menu, etc., elle reste dans la page qui s'efface : plus d'image fantôme par-dessus l'accueil.
+    var sc = main.querySelector('.scene');
+    if (sc) {
+      window.addEventListener('pageswap', function (ev) {
+        if (!ev.viewTransition) return;
+        var dest = ev.activation && ev.activation.entry ? ev.activation.entry.url || '' : '', garder = /\/looks\/[^\/?#]+\.html/.test(dest);
+        try { if (sessionStorage.getItem('am_revenir')) garder = true; } catch (e) {}
+        if (!garder) sc.style.viewTransitionName = 'none';
+      });
+      window.addEventListener('pageshow', function () { sc.style.viewTransitionName = ''; });
+    }
   }
 
 
@@ -462,10 +474,11 @@
       var carteVue = revenir ? grille.querySelector('.carte[data-id="' + revenir + '"]') : null;
       if (carteVue && carteVue.hidden) carteVue = null;
       if (carteVue) {
-        // l'image du look revient se poser sur sa carte (transition douce entre les pages, 10/11/2026)
-        var fig = carteVue.querySelector('figure');
-        if (fig) { fig.style.viewTransitionName = 'image-look'; setTimeout(function () { fig.style.viewTransitionName = ''; }, 1200); }
+        var fig = carteVue.querySelector('figure'), imC = fig && fig.querySelector('img');
+        if (imC) imC.loading = 'eager';
         carteVue.scrollIntoView({ block: 'center' });
+        // l'image du look qui revient se poser sur sa carte : réglé par le petit script placé juste après la grille
+        // (build.py, test 12), car la page peut s'afficher avant que ce fichier-ci soit lu
       } else { var sl = document.getElementById('les-looks'); if (sl) sl.scrollIntoView({ block: 'start' }); }
     }
     liens.forEach(function (a) {
@@ -1301,8 +1314,21 @@
       for (var kI = 0; kI < d.length; kI++) { rI -= poidsI[kI]; if (rI < 0) { dep = kI; break; } }
     }
     avant = dep; retenir();
-    // entrée : les arches partent d'une pile et s'ouvrent en éventail
-    if (RM) { placer(0, true); minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return; }
+    var imDep = arches[dep] && arches[dep].querySelector('img');
+    if (imDep) { imDep.loading = 'eager'; try { imDep.fetchPriority = 'high'; } catch (e) {} }
+    // entrée : les arches partent d'une pile et s'ouvrent en éventail. Test 12 (10/11/2026, 20 h) : seulement à l'arrivée
+    // sur le site. Quand on vient d'une autre page du site (logo, « Tous les looks »…), la page fait déjà son fondu :
+    // l'éventail est posé ouvert d'emblée, sinon on voyait « deux chargements » à la suite.
+    var depuisSite = false;
+    try { depuisSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+    var navI = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+    if (navI && navI.type === 'reload') depuisSite = false;
+    if (RM || depuisSite) {
+      arches.forEach(function (a) { a.style.transition = 'none'; });
+      placer(0, true); void boite.offsetWidth;
+      arches.forEach(function (a) { a.style.transition = ''; });
+      minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 600); return;
+    }
     requestAnimationFrame(function () { requestAnimationFrame(function () { placer(); }); });
     minuteur = setTimeout(function () { montrerNumero(); planifier(); }, 1300);
   }

@@ -756,10 +756,13 @@ main:focus { outline: none; }
 @view-transition { navigation: auto; }
 .entete { view-transition-name: entete; }
 .scene { view-transition-name: image-look; }
-::view-transition-old(root) { animation: vt-sortie .26s cubic-bezier(.4, 0, 1, 1) both; }
-::view-transition-new(root) { animation: vt-entree .42s cubic-bezier(.22, 1, .36, 1) .06s both; }
+/* test 12 (10/11/2026, 20 h) : l'ancienne page reste pleine pendant que la nouvelle apparaît par-dessus. Avant, les deux
+   étaient à moitié transparentes au même moment et on voyait le fond derrière (la page « s'assombrissait » sur iPhone). */
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: vt-entree .34s cubic-bezier(.22, 1, .36, 1) both; }
 ::view-transition-group(image-look) { animation-duration: .5s; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
 ::view-transition-old(image-look), ::view-transition-new(image-look) { animation-duration: .5s; }
-@keyframes vt-sortie { to { opacity: 0; } }
-@keyframes vt-entree { from { opacity: 0; transform: translateY(14px); } }
+/* image du look sans arrivée (la carte n'était pas prête) : elle s'efface vite au lieu de traîner sur la page */
+::view-transition-old(image-look):only-child { animation-duration: .2s; }
+@keyframes vt-entree { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
