@@ -690,3 +690,30 @@ main:focus { outline: none; }
   .entete.range { transform: none; opacity: 0; pointer-events: none; }
   .filtres { transition: none; }
 }
+
+/* ---------- Grands écrans et marges (10/11/2026, test n°6, demande d'AIRKATE) ----------
+   1. Une marge sur les côtés qui suit l'écran (16 px sur téléphone, jusqu'à 72 px), jamais collée au bord.
+   2. La largeur du contenu grandit avec l'écran (1120 px sur un portable, jusqu'à 1560 px sur un 32 pouces)
+      et le texte grandit un peu avec elle : sur un grand écran, la page n'est plus une bande étroite au milieu.
+   3. Accueil sur ordinateur : l'introduction remplit exactement le premier écran (le trait de séparation tombe en bas
+      de l'écran), au lieu de laisser voir le titre « Les looks de l'atelier » coupé en deux.
+   4. Page d'un look sur ordinateur : l'image entière tient toujours dans l'écran (numéros du bas compris). */
+:root { --marge: clamp(16px, 4.5vw, 72px); --largeur: 1120px; --h-entete: calc(24px + 2.75rem); }
+@media (min-width: 1500px) { .marque img { height: 2.75rem; } }  /* le logo grandit avec le texte sur grand écran */
+.wrap { width: min(var(--largeur), 100% - 2 * var(--marge)); }
+@media (min-width: 1500px) { :root { --largeur: 1240px; } html { font-size: 103.125%; } }
+@media (min-width: 1800px) { :root { --largeur: 1400px; } html { font-size: 112.5%; } .grille { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 2200px) { :root { --largeur: 1600px; } html { font-size: 125%; } }
+@media (min-width: 2800px) { :root { --largeur: 1760px; } html { font-size: 137.5%; } }
+@media (min-width: 900px) and (min-height: 600px) {
+  .intro { min-height: calc(100vh - var(--h-entete)); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); align-items: initial;
+    padding-block: clamp(28px, 5vh, 72px); }
+  @supports (height: 1svh) { .intro { min-height: calc(100svh - var(--h-entete)); padding-block: clamp(28px, 5svh, 72px); } }
+  .intro h1 { align-self: end; }
+  .intro-texte { align-self: start; }
+  .intro-scene { --h: clamp(420px, 62vh, 820px); }
+  @supports (height: 1svh) { .intro-scene { --h: clamp(420px, 62svh, 820px); } }
+  .look-visuel { width: min(100%, calc((100vh - var(--h-entete) - 64px) * 2 / 3)); justify-self: center; }
+  @supports (height: 1svh) { .look-visuel { width: min(100%, calc((100svh - var(--h-entete) - 64px) * 2 / 3)); } }
+}
+@media (min-width: 1500px) { .intro h1 { font-size: clamp(4rem, 3vw, 4.6rem); } .intro-scene { --h: clamp(420px, 66svh, 940px); } }
