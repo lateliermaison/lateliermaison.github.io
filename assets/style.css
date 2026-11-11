@@ -556,7 +556,7 @@ html.recherche-active { overflow: hidden; }
 .cine-indice { margin: 0; font-size: .82rem; color: var(--taupe); transition: opacity .3s ease; }
 .cine[data-etape="4"] .cine-indice { opacity: 0; }
 
-@media (min-width: 900px) {
+@media (min-width: 900px) and (min-height: 521px) {  /* test 17 : pas sur un téléphone large tenu en paysage */
   .cine { height: calc(100vh + 4 * 70vh); height: calc(100svh + 4 * 70svh); }
   .cine-scene { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 72px; padding-block: 5svh; }
   .cine h2 { margin-bottom: 8px; }
@@ -791,3 +791,24 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
 .scene .pastille { width: clamp(22px, 7.3cqi, 34px); height: clamp(22px, 7.3cqi, 34px); font-size: clamp(.68rem, 3.6cqi, .95rem); }
 @container (max-width: 480px) { .scene .pastille { border-width: 1.5px; box-shadow: 0 0 0 2px rgba(251, 248, 243, .35); } }
 .scene .pastille::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; }
+/* test 17 (11/11/2026) : « Comment naît un look »
+   - grand écran : la largeur de l'arche est fixée directement (avant, elle se déduisait de la hauteur ; Safari sur iPad
+     en paysage la calculait trop étroite, arche « planche de surf » serrée à droite, jusqu'à l'étape 4) ; même taille
+     à toutes les étapes ;
+   - téléphone en paysage : texte à gauche, arche à droite à la hauteur de l'écran (avant : arche minuscule en dessous). */
+@media (min-width: 900px) and (min-height: 521px) {
+  .cine-visuel { height: auto; width: min(44vw, calc((90svh - 84px) * 2 / 3)); grid-template-rows: auto auto; align-content: center; }
+  .cine-cadre { height: auto; width: 100%; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .cine-scene { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 28px; padding-block: 8px; }
+  .cine h2 { font-size: 1.4rem; }
+  .cine-texte { align-self: center; }
+  .cine-visuel { height: auto; width: max(calc((100svh - 112px) * 2 / 3), 320px); grid-template-rows: auto auto; align-content: center; }
+  .cine-cadre { height: auto; width: calc((100svh - 112px) * 2 / 3); }
+  .cine-textes { min-height: 4.6em; }
+  .cine-visuel .atelier-fiche { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; }
+  .cine-visuel .atelier-fiche img { width: 48px; height: 48px; border-radius: 10px; }
+  .cine-visuel .atelier-fiche-nom { font-size: .9rem; }
+  .cine-visuel .atelier-article { min-height: 56px; }
+}
