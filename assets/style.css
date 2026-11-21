@@ -839,3 +839,16 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
 .rs-compris { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 12px 8px; font-size: .8rem; color: var(--taupe); }
 .rs-compris span { padding: 3px 9px; border-radius: 999px; background: var(--laiton-clair); color: var(--noyer); font-weight: 600; }
 .accueil-titre > * { min-width: 0; }  /* 21/11/2026 : la liste des résultats élargissait la barre sur iPhone (défilement de côté) */
+
+/* 21/11/2026 : logo vivant — l'arche s'allume et respire (mètre ruban retiré) */
+.marque .logo-anime { display: block; height: 44px; width: auto; aspect-ratio: 6428.69 / 1000; overflow: visible; }
+@media (max-width: 420px) { .marque .logo-anime { height: 30px; } }
+@media (min-width: 1500px) { .marque .logo-anime { height: 2.75rem; } }
+.logo-anime .lm-souffle { fill: #F6D9A0; opacity: 0; animation: lm-souffle 7s ease-in-out 1.6s infinite; }
+@keyframes lm-souffle { 0%, 100% { opacity: 0; } 50% { opacity: .42; } }
+.logo-anime .lm-reflet { transform-box: view-box; animation: lm-reflet 11s cubic-bezier(.45, 0, .2, 1) 3s infinite; }
+@keyframes lm-reflet { 0%, 72% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(980px) skewX(-18deg); } }
+.logo-anime .lm-eteint { fill: #2E2219; opacity: 0; }
+.logo-anime.lm-intro .lm-eteint { animation: lm-allume 1.1s cubic-bezier(.5, 0, .3, 1) both; }
+@keyframes lm-allume { 0% { opacity: .92; } 35% { opacity: .55; } 45% { opacity: .8; } 100% { opacity: 0; } }
+.logo-anime.lm-fixe .lm-souffle, .logo-anime.lm-fixe .lm-reflet { animation: none; }

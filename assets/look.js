@@ -1754,8 +1754,22 @@
     });
   }
 
+  /* ---------- Logo vivant (21/11/2026) ----------
+     « L'atelier s'allume » : à la 1re page de la visite, l'arche est éteinte puis s'allume comme une lampe le soir ;
+     ensuite elle « respire » doucement (halo chaud) et un reflet la traverse de temps en temps (CSS).
+     Le mètre ruban 3D essayé le même soir a été retiré à la demande d'AIRKATE (« pas très propre »).
+     Mouvement réduit demandé par le téléphone : logo fixe. */
+  function logoAnime() {
+    var svg = document.querySelector('.marque .logo-anime');
+    if (!svg) return;
+    if (RM) { svg.classList.add('lm-fixe'); return; }
+    var premiere = true;
+    try { premiere = !sessionStorage.getItem('am_logo'); sessionStorage.setItem('am_logo', '1'); } catch (e) {}
+    if (premiere) svg.classList.add('lm-intro');
+  }
+
   function demarrer() {
-    hautDePage();
+    hautDePage(); logoAnime();
     bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
     noterLook();
     var main = document.querySelector('main');
