@@ -1066,7 +1066,7 @@
       var a = v.articles[choisi - 1];
       zone.innerHTML = '<div class="atelier-fiche"><img src="' + RACINE + echap(a.img) + '" alt="" width="60" height="60">'
         + '<div><p class="atelier-fiche-nom">' + a.n + '. ' + echap(a.nom) + '</p>'
-        + '<p class="atelier-fiche-prix">' + echap(a.prix) + ' · <a href="' + RACINE + echap(v.lien) + '#article-' + a.n + '">Voir l\'article</a></p></div></div>';
+        + '<p class="atelier-fiche-prix">' + (a.prix ? echap(a.prix) + ' · ' : '') + '<a href="' + RACINE + echap(v.lien) + '#article-' + a.n + '">Voir l\'article</a></p></div></div>';
       [].forEach.call(couche.children, function (b, i) { b.classList.toggle('actif', i + 1 === choisi); });
     }
     function charger(k) {
