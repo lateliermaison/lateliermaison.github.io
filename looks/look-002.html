@@ -82,8 +82,9 @@
   <div class="recherche-champ">
     <svg class="loupe" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15.4 15.4 20 20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
     <input id="q-panneau" type="search" name="q" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="r-panneau"
-      placeholder="Une pièce, une couleur, un article…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Rechercher un look">
+      placeholder="Une pièce, une couleur… ou décrivez votre idée" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Rechercher un look">
     <button class="recherche-effacer" type="button" aria-label="Effacer la recherche" hidden></button>
+    <button class="recherche-micro" type="button" aria-label="Dicter la recherche" aria-pressed="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <kbd class="recherche-raccourci" aria-hidden="true" hidden></kbd>
   </div>
   <div class="recherche-resultats" id="r-panneau" role="listbox" aria-label="Suggestions" hidden></div>
@@ -99,8 +100,9 @@
     <div class="scene">
       <img src="../assets/img/looks/look002-salon-noel-beige-dore.jpg" alt="Salon de Noël cosy beige et doré avec sapin givré décoré de boules champagne et blanches, guirlande LED blanc chaud, cache-pied en jacinthe d&#x27;eau tressée, canapé beige avec coussins en fausse fourrure crème et plaid grosse maille" width="900" height="1350">
       <button class="pastille" style="left:75%;top:14%" data-n="1" aria-label="Voir l'article 1 : Sapin artificiel givré 180 cm">1</button><button class="pastille" style="left:48%;top:44%" data-n="2" aria-label="Voir l'article 2 : Guirlande LED blanc chaud 20 m">2</button><button class="pastille" style="left:82%;top:58%" data-n="3" aria-label="Voir l'article 3 : Boules de Noël champagne et blanc, lot de 30">3</button><button class="pastille" style="left:37%;top:68%" data-n="4" aria-label="Voir l'article 4 : Plaid grosse maille chenille crème">4</button><button class="pastille" style="left:28%;top:51%" data-n="5" aria-label="Voir l'article 5 : Housses de coussin fausse fourrure crème, lot de 2">5</button><button class="pastille" style="left:69%;top:70%" data-n="6" aria-label="Voir l'article 6 : Cache-pied de sapin en jacinthe d&#x27;eau">6</button>
+      <a class="epingler" href="https://fr.pinterest.com/pin/1105985621023758127/" rel="noopener" target="_blank" aria-label="Enregistrer ce look sur Pinterest"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.6-5 3.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Enregistrer</a>
     </div>
-    <figcaption>Touchez un numéro pour retrouver l'article. <span class="astuce-glisser">Glissez vers la gauche ou la droite pour changer de look.</span></figcaption>
+    <figcaption>Touchez l'image pour voir les numéros, puis un numéro pour retrouver l'article. <span class="astuce-glisser">Glissez vers la gauche ou la droite pour changer de look.</span></figcaption>
   </figure>
   <div class="look-texte">
     <p class="look-num">Look n°2</p>

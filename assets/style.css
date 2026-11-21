@@ -812,3 +812,30 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
   .cine-visuel .atelier-fiche-nom { font-size: .9rem; }
   .cine-visuel .atelier-article { min-height: 56px; }
 }
+
+/* 21/11/2026 : image au calme — après l'arrivée, les numéros se replient en petits points ; ils reviennent dès qu'on touche
+   ou survole l'image. La zone de toucher reste de la taille d'un numéro (::before agrandi pour compenser la réduction). */
+.scene .pastille { transition: transform .38s cubic-bezier(.3, 0, .2, 1), background .25s ease, color .25s ease, box-shadow .3s ease, border-color .3s ease; }
+.scene.calme .pastille:not(.actif) { transform: translate(-50%, -50%) scale(.36); color: transparent; border-color: var(--craie); box-shadow: 0 0 0 5px rgba(46, 34, 25, .16), 0 1px 6px rgba(46, 34, 25, .35); }
+.scene.calme .pastille:not(.actif)::before { inset: -40px; }
+.scene.calme .pastille:not(.actif):hover { transform: translate(-50%, -50%) scale(1.12); color: var(--craie); }
+@media (prefers-reduced-motion: reduce) { .scene .pastille { transition: color .2s ease, background .2s ease; } }
+
+/* 21/11/2026 : « Enregistrer » sur l'image, en bas à droite (comme sur Pinterest), en plus du lien en bas de page */
+.epingler { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px 9px 11px; border-radius: 999px; background: rgba(251, 248, 243, .92); color: var(--noyer);
+  font: 600 .82rem/1 var(--texte); text-decoration: none; box-shadow: 0 2px 10px rgba(46, 34, 25, .18);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: background .2s ease, color .2s ease, transform .2s ease; }
+.epingler:hover { background: var(--noyer); color: var(--craie); }
+.epingler:active { transform: scale(.96); }
+.epingler svg { flex: none; }
+
+/* 21/11/2026 : recherche — micro pour dicter et « Compris : » pour les descriptions */
+.recherche-micro { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--taupe); cursor: pointer; transition: background .2s ease, color .2s ease; }
+.recherche-micro:hover { background: var(--laiton-clair); color: var(--noyer); }
+.recherche-micro.ecoute { background: var(--laiton); color: var(--craie); animation: micro-ecoute 1.4s ease-in-out infinite; }
+@keyframes micro-ecoute { 0%, 100% { box-shadow: 0 0 0 0 rgba(160, 123, 63, .45); } 50% { box-shadow: 0 0 0 8px rgba(160, 123, 63, 0); } }
+@media (prefers-reduced-motion: reduce) { .recherche-micro.ecoute { animation: none; } }
+.rs-compris { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 12px 8px; font-size: .8rem; color: var(--taupe); }
+.rs-compris span { padding: 3px 9px; border-radius: 999px; background: var(--laiton-clair); color: var(--noyer); font-weight: 600; }
+.accueil-titre > * { min-width: 0; }  /* 21/11/2026 : la liste des résultats élargissait la barre sur iPhone (défilement de côté) */

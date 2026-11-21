@@ -318,8 +318,28 @@
     if (!main._espace) { main._espace = true; var tm = null; window.addEventListener('resize', function () { if (main.isConnected) { clearTimeout(tm); tm = setTimeout(faire, 120); } }); }
   }
 
+  /* ---------- Image au calme (21/11/2026) ----------
+     Demande d'AIRKATE : voir l'image sans les numéros, sans ajouter de clic. Les numéros apparaissent à l'arrivée
+     (on comprend qu'ils existent), puis se replient en petits points discrets ; l'image reste propre.
+     Dès qu'on touche, survole ou fait glisser l'image, ou qu'on parcourt la liste, les numéros reviennent.
+     Un point se touche directement : sa zone de toucher garde la taille du numéro. */
+  function imageCalme(main) {
+    var sc = main.querySelector('.scene'); if (!sc || !sc.querySelector('.pastille')) return;
+    var minuteur = null, survol = false;
+    function calmer(apres) { clearTimeout(minuteur); minuteur = setTimeout(function () { if (!survol && !sc.contains(document.activeElement)) sc.classList.add('calme'); }, apres); }
+    function reveiller(duree) { sc.classList.remove('calme'); calmer(duree || 3200); }
+    calmer(RM ? 1800 : 2600);
+    sc.addEventListener('pointerdown', function () { reveiller(3600); });
+    sc.addEventListener('pointerenter', function (ev) { if (ev.pointerType === 'mouse') { survol = true; reveiller(); } });
+    sc.addEventListener('pointerleave', function (ev) { if (ev.pointerType === 'mouse') { survol = false; calmer(900); } });
+    sc.addEventListener('focusin', function () { reveiller(); });
+    sc.addEventListener('focusout', function () { calmer(1500); });
+    var liste = main.querySelector('.articles');
+    if (liste) ['mouseover', 'focusin', 'click'].forEach(function (t) { liste.addEventListener(t, function () { if (sc.classList.contains('calme') || t !== 'mouseover') reveiller(2600); }); });
+  }
+
   function initPage(main) {
-    adapterNavigation(main); pastilles(main); espacerPastilles(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
+    adapterNavigation(main); pastilles(main); espacerPastilles(main); imageCalme(main); fleche(main); liensAmazon(main); arriveeAmazon(main); arriveeArticle(main); prechargerVoisins();
     // « Tous les looks » : l'accueil se placera sur la carte de ce look (10/11/2026)
     var r = main.querySelector('.retour');
     if (r) r.addEventListener('click', function () {
@@ -377,11 +397,18 @@
     var compte = document.getElementById('compte');
     var barre = document.querySelector('.filtres'), minuteur = null, DUREE = 550, COURBE = 'cubic-bezier(.33,1,.68,1)';
     // défilement doux, à la même vitesse et avec la même courbe que la grille : la page ne « saute » jamais
+    /* 21/11/2026 : durée selon la distance (700 à 1 100 ms) et courbe douce au départ comme à l'arrivée,
+       pour que la page glisse lentement jusqu'à la barre des pièces, sans effet « flash ». Un geste de l'utilisateur l'arrête. */
+    var defilEnCours = 0;
     function defiler(cible) {
-      var y0 = window.scrollY, d = cible - y0, t0 = null;
+      var y0 = window.scrollY, d = cible - y0, t0 = null, duree = Math.max(700, Math.min(1100, 520 + Math.abs(d) * 0.55)), jeton = ++defilEnCours;
+      function stop() { defilEnCours++; window.removeEventListener('wheel', stop); window.removeEventListener('touchstart', stop); }
+      window.addEventListener('wheel', stop, { passive: true }); window.addEventListener('touchstart', stop, { passive: true });
       function pas(t) {
+        if (jeton !== defilEnCours) return;
         if (t0 === null) t0 = t;
-        var k = Math.min(1, (t - t0) / DUREE), e = 1 - Math.pow(1 - k, 3);
+        var k = Math.min(1, (t - t0) / duree), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        if (k >= 1) stop();
         window.scrollTo(0, y0 + d * e);
         if (k < 1) requestAnimationFrame(pas);
       }
@@ -392,6 +419,9 @@
       grille.style.height = ''; grille.style.transition = ''; grille.style.opacity = '';
       cartes.forEach(function (c) { c.style.transition = ''; c.style.transform = ''; c.style.opacity = ''; });
     }
+    // 21/11/2026 : un clic sur une pièce amène la barre des pièces tout en haut de l'écran, que l'on soit au-dessus ou en dessous
+    function cibleBarre() { var h = document.querySelector('.filtres-infos') || grille; return Math.max(0, h.getBoundingClientRect().top + window.scrollY - barre.offsetHeight - 8); }
+    function allerALaBarre() { if (!barre) return; var c = cibleBarre(); if (Math.abs(window.scrollY - c) > 4) { if (RM) window.scrollTo(0, c); else defiler(c); } }
     /* Change de pièce sans saut : les cartes qui restent glissent à leur nouvelle place, les nouvelles apparaissent
        en fondu, la hauteur de la grille suit en douceur et la page remonte doucement au début de la liste. */
     function changer(cat, ordre, montrer) {
@@ -531,7 +561,7 @@
       } else { var sl = document.getElementById('les-looks'); if (sl) sl.scrollIntoView({ block: 'start' }); }
     }
     liens.forEach(function (a) {
-      a.addEventListener('click', function (ev) { ev.preventDefault(); if (a.getAttribute('aria-current')) return; changer(a.dataset.cat); });
+      a.addEventListener('click', function (ev) { ev.preventDefault(); if (a.getAttribute('aria-current')) { allerALaBarre(); return; } changer(a.dataset.cat, null, true); });
     });
     if (tri) tri.addEventListener('change', function () {
       var actif = document.querySelector('.filtre[aria-current]');
@@ -710,7 +740,87 @@
     var articles = [];
     INDEX.looks.forEach(function (l) { l._articles.forEach(function (a) { var sc = noter(a._m, q); if (sc >= 2.4 * q.length) articles.push({ a: a, sc: sc }); }); });
     articles.sort(function (a, b) { return b.sc - a.sc; });
-    return { pieces: pieces.slice(0, 3), looks: looks, articles: articles.slice(0, 5), q: q, correction: phrase || correction(texte) };
+    var res = { pieces: pieces.slice(0, 3), looks: looks, articles: articles.slice(0, 5), q: q, correction: phrase || correction(texte) };
+    // une phrase (3 mots utiles ou plus), ou 2 mots qui ne donnent rien : on lit la description (21/11/2026)
+    if (!theme && (q.length >= 3 || (q.length >= 2 && !looks.length) || q.some(function (w) { return FLOUS.indexOf(' ' + w + ' ') >= 0; }))) {
+      var dsc = decrire(texte, res.pieces);
+      if (dsc && dsc.looks.length) { res.looks = dsc.looks; res.correction = ''; res.articles = res.articles.slice(0, 2); res.pieces = []; res.description = dsc; }
+    }
+    return res;
+  }
+  /* ---------- Recherche par description (21/11/2026) ----------
+     « salle de bain avec douche à l'italienne avec des trucs verts » : on repère la pièce, puis chaque idée
+     (une couleur et ses nuances, un objet et ses synonymes) ; chaque look gagne des points pour les idées qu'il contient.
+     Les mots qui ne veulent rien dire pour la recherche (« trucs », « genre », « j'aimerais »…) sont ignorés.
+     On montre toujours ce qui a été compris, et les looks les plus proches même s'il n'y a pas de look exact. */
+  var FLOUS = ' truc machin chose genre quelque plein beaucoup envie voudrai voudrais veux veut cherche aime aimerai aimerais bien joli jolie sympa beau belle avoir il y ai je j qui que dans comme peu tout tou toute faire fait mettre met quoi un une est c ca cela ou avec ';
+  var NUANCES = {
+    'vert': 'vert verte sauge olive eucalyptus kaki emeraude menthe plante feuillage monstera fougere tombante cactu succulente',
+    'rose': 'rose poudre blush cerisier', 'violet': 'violet violette lilas lavande prune mauve',
+    'bleu': 'bleu bleue marine petrole canard', 'rouge': 'rouge bordeaux grenat coquelicot cerise',
+    'beige': 'beige creme ecru lin sable avoine naturel taupe', 'blanc': 'blanc blanche ivoire creme marbre',
+    'noir': 'noir noire anthracite', 'dore': 'dore doree laiton gold cuivre', 'jaune': 'jaune moutarde ocre miel',
+    'orange': 'orange terracotta brique rouille', 'gris': 'gri grise perle', 'marron': 'marron chocolat noyer cognac',
+    'bois': 'bois chene noyer teck bambou rotin', 'lumiere': 'lumiere lumineu led lampe guirlande luminaire suspension plafonnier bougie',
+    'plante': 'plante feuillage fleur bouquet monstera eucalyptus olivier', 'fleur': 'fleur bouquet pampa tulipe rose coquelicot',
+    'cosy': 'cosy chaleureu cocooning plaid bouclette douillet', 'rangement': 'rangement etagere panier boite commode penderie',
+    'italienne': 'italienne douche paroi', 'moderne': 'moderne epure design', 'chic': 'chic elegant marbre dore',
+    'velour': 'velour', 'miroir': 'miroir', 'tapi': 'tapi', 'coussin': 'coussin', 'rideau': 'rideau voilage'
+  };
+  var NUANCE_DE = null;
+  function nuances() {
+    if (NUANCE_DE) return NUANCE_DE;
+    NUANCE_DE = {};
+    for (var k in NUANCES) {
+      var alts = NUANCES[k].split(' ').map(racineMot);
+      NUANCE_DE[racineMot(k)] = { nom: k, alts: alts };
+      if (/^(vert|rose|violet|bleu|rouge|beige|blanc|noir|dore|jaune|orange|gri|marron)$/.test(k))  // « verte », « dorée » : même couleur
+        alts.slice(1, 2).forEach(function (a) { if (!NUANCE_DE[a]) NUANCE_DE[a] = NUANCE_DE[racineMot(k)]; });
+    }
+    return NUANCE_DE;
+  }
+  var NOMS_LISIBLES = { dore: 'doré', lumiere: 'lumière', gri: 'gris', italienne: "à l'italienne", tapi: 'tapis', velour: 'velours' };
+  function decrire(texte, piecesTrouvees) {
+    var nt = ' ' + norm(texte) + ' ', reste = nt, salles = [], parAlias = null;
+    INDEX.pieces.forEach(function (p) {
+      var ph = p._phrases[0];
+      if (ph && nt.indexOf(' ' + ph + ' ') >= 0) { salles.push(p); reste = reste.split(' ' + ph + ' ').join(' '); }
+    });
+    INDEX.pieces.forEach(function (p) {
+      p._phrases.slice(1).forEach(function (ph) {
+        if (ph && reste.indexOf(' ' + ph + ' ') >= 0) {
+          if (salles.indexOf(p) >= 0) return;  // « escalier », « douche » : la pièce est déjà connue, le mot reste une idée
+          if (!salles.length && !parAlias) { parAlias = p; reste = reste.split(' ' + ph + ' ').join(' '); }
+        }
+      });
+    });
+    if (parAlias) salles.push(parAlias);
+    if (!salles.length && piecesTrouvees && piecesTrouvees[0] && piecesTrouvees[0].sc >= 4) {  // pièce mal tapée (« sale de bin »)
+      salles.push(piecesTrouvees[0].p);
+      piecesTrouvees[0].p._m.forEach(function (x) { reste = reste.split(' ' + x[0] + ' ').join(' '); });
+    }
+    var vus = {}, idees = [];
+    norm(reste).split(' ').forEach(function (b) {
+      if (!b || VIDES.indexOf(' ' + b + ' ') >= 0 || FLOUS.indexOf(' ' + b + ' ') >= 0 || b.length < 2) return;
+      var w = racineMot(b), n = nuances()[w];
+      if (FLOUS.indexOf(' ' + w + ' ') >= 0) return;
+      var idee = n ? { nom: NOMS_LISIBLES[n.nom] || n.nom, alts: n.alts } : { nom: b, alts: [w] };
+      if (vus[idee.nom]) return; vus[idee.nom] = 1; idees.push(idee);
+    });
+    if (!salles.length && !idees.length) return null;
+    var looks = INDEX.looks.filter(function (l) { return salles.every(function (p) { return l.cats.indexOf(p.id) >= 0; }); }).map(function (l) {
+      var sc = 0, trouve = [];
+      idees.forEach(function (idee) {
+        var best = 0;
+        idee.alts.forEach(function (a) { l._m.forEach(function (x) { var r = ressemblance(a, x[0]); if (r >= .75) { r *= x[1]; if (r > best) best = r; } }); });
+        if (best >= .8) { sc += Math.min(best, 3); trouve.push(idee.nom); }
+      });
+      return { l: l, sc: sc + (salles.length ? 4 : 0), trouve: trouve };
+    }).filter(function (x) { return salles.length ? true : x.trouve.length >= Math.max(1, Math.ceil(idees.length / 2)); })
+      .sort(function (a, b) { return b.trouve.length - a.trouve.length || b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+    var compris = salles.map(function (p) { return p.nom; }).concat(idees.filter(function (i) { return looks.some(function (x) { return x.trouve.indexOf(i.nom) >= 0; }); }).map(function (i) { return i.nom; }));
+    var complet = looks.length && looks[0].trouve.length === idees.length;
+    return { looks: looks, compris: compris, complet: complet, nbIdees: idees.length };
   }
   function echapper(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   // souligne les mots trouvés dans un titre
@@ -794,7 +904,10 @@
       if (!INDEX) { charger_index().then(function (d) { if (d) rendre(); }); return; }
       if (!norm(texte)) { afficher(document.activeElement === input ? suggestionsVides() : ''); return; }
       var r = chercher(texte); if (!r) { afficher(''); return; }
-      var h = '';
+      var h = '', dsc = r.description;
+      if (dsc) {
+        h += '<p class="rs-compris">Compris : ' + dsc.compris.map(function (c) { return '<span>' + echapper(c) + '</span>'; }).join('') + '</p>';
+      }
       if (r.correction && !r.looks.length && !r.pieces.length) {
         var r2 = chercher(r.correction);
         if (r2 && (r2.looks.length || r2.pieces.length)) { h += '<p class="rs-correction">Résultats pour <b>' + echapper(r.correction) + '</b></p>'; r = r2; }
@@ -804,8 +917,8 @@
         r.pieces.forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.p.img, titre: echapper(x.p.nom), nb: x.p.nb + (x.p.nb > 1 ? ' looks' : ' look'), href: lien('index.html?piece=' + x.p.id), action: 'piece', val: x.p.id }); });
       }
       if (r.looks.length) {
-        h += '<p class="rs-groupe">Looks</p>';
-        r.looks.slice(0, 4).forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.l.img, titre: souligner(x.l.titre, r.q), sous: 'Look n°' + x.l.num + ', ' + x.l.piece + ', ' + x.l.articles.length + ' articles', href: lien('looks/' + x.l.id + '.html'), action: 'look' }); });
+        h += '<p class="rs-groupe">' + (dsc ? (dsc.complet ? 'Les looks qui correspondent' : 'Les looks les plus proches') : 'Looks') + '</p>';
+        r.looks.slice(0, dsc ? 5 : 4).forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.l.img, titre: souligner(x.l.titre, r.q), sous: 'Look n°' + x.l.num + ', ' + x.l.piece + (x.trouve && x.trouve.length ? ' · avec : ' + x.trouve.join(', ') : ', ' + x.l.articles.length + ' articles'), href: lien('looks/' + x.l.id + '.html'), action: 'look' }); });
       }
       if (r.articles.length) {
         h += '<p class="rs-groupe">Articles</p>';
@@ -851,6 +964,27 @@
     });
     liste.addEventListener('mousemove', function (ev) { var o = ev.target.closest('.rs-option'); if (o) selection(options.indexOf(o)); });
     if (effacer) effacer.addEventListener('click', function () { input.value = ''; input.focus(); rendre(); });
+    /* Dictée (21/11/2026) : le micro remplit la barre pendant qu'on parle ; les résultats se mettent à jour en direct.
+       Le bouton n'apparaît que si le navigateur sait faire (Safari iPhone, Chrome ; pas Firefox). */
+    var micro = bloc.querySelector('.recherche-micro'), Reco = window.SpeechRecognition || window.webkitSpeechRecognition, ecoute = null;
+    if (micro && Reco) {
+      micro.hidden = false;
+      micro.addEventListener('click', function () {
+        if (ecoute) { ecoute.stop(); return; }
+        try { ecoute = new Reco(); } catch (e) { ecoute = null; return; }
+        ecoute.lang = 'fr-FR'; ecoute.interimResults = true; ecoute.continuous = false; ecoute.maxAlternatives = 1;
+        var avant = input.placeholder;
+        micro.classList.add('ecoute'); micro.setAttribute('aria-pressed', 'true'); input.placeholder = 'Je vous écoute… décrivez la pièce';
+        ecoute.onresult = function (ev) {
+          var t = ''; for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+          input.value = t.replace(/\s+/g, ' ').trim(); rendre();
+        };
+        function fin() { micro.classList.remove('ecoute'); micro.setAttribute('aria-pressed', 'false'); input.placeholder = avant; ecoute = null; if (input.value) { input.focus(); rendre(); } }
+        ecoute.onend = fin;
+        ecoute.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { micro.hidden = true; input.placeholder = avant; } };
+        try { ecoute.start(); } catch (e) { fin(); }
+      });
+    }
     var idees = bloc.parentNode.querySelector('.idees');
     // un clic hors de la barre ferme la liste, sauf un clic sur une idée (08/11/2026 : la liste se refermait aussitôt)
     if (!dansPanneau) document.addEventListener('click', function (ev) { if (!bloc.contains(ev.target) && !(idees && idees.contains(ev.target))) afficher(''); });
