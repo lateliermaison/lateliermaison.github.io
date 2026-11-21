@@ -103,7 +103,7 @@
     if (!li) return;
     li.classList.add('actif');
     var note = document.createElement('p'); note.className = 'note-amazon';
-    note.textContent = 'Touche \u00ab Voir sur Amazon \u00bb pour l\u2019ouvrir dans l\u2019appli Amazon.';
+    note.textContent = 'Touchez \u00ab Voir le prix sur Amazon \u00bb pour l\u2019ouvrir dans l\u2019appli Amazon.';
     var bas = li.querySelector('.article-bas'); if (bas) bas.appendChild(note);
     setTimeout(function () { li.scrollIntoView({ block: 'center' }); }, 60);
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
@@ -798,7 +798,7 @@
       if (r.correction && !r.looks.length && !r.pieces.length) {
         var r2 = chercher(r.correction);
         if (r2 && (r2.looks.length || r2.pieces.length)) { h += '<p class="rs-correction">Résultats pour <b>' + echapper(r.correction) + '</b></p>'; r = r2; }
-      } else if (r.correction) h += '<p class="rs-correction">Tu voulais dire <b>' + echapper(r.correction) + '</b> ?</p>';
+      } else if (r.correction) h += '<p class="rs-correction">Vouliez-vous dire <b>' + echapper(r.correction) + '</b> ?</p>';
       if (r.pieces.length) {
         h += '<p class="rs-groupe">Pièces</p>';
         r.pieces.forEach(function (x) { h += option({ id: 'rs' + (uid++), img: x.p.img, titre: echapper(x.p.nom), nb: x.p.nb + (x.p.nb > 1 ? ' looks' : ' look'), href: lien('index.html?piece=' + x.p.id), action: 'piece', val: x.p.id }); });
@@ -816,7 +816,7 @@
         h += option({ id: 'rs' + (uid++), cls: 'rs-tout', pastille: LOUPE_MINI, titre: 'Voir les ' + r.looks.length + ' looks pour « ' + echapper(texte.trim()) + ' »', href: lien('index.html?q=' + encodeURIComponent(texte.trim())), action: 'tout', val: ids });
       }
       if (!h || (!r.pieces.length && !r.looks.length && !r.articles.length)) {
-        h = '<p class="rs-vide">Aucun look pour « ' + echapper(texte.trim()) + ' ». Essaie une pièce :</p><div class="rs-vide-pieces">'
+        h = '<p class="rs-vide">Aucun look pour « ' + echapper(texte.trim()) + ' ». Essayez une pièce :</p><div class="rs-vide-pieces">'
           + INDEX.pieces.slice(0, 6).map(function (p) { return '<button type="button" data-q="' + echapper(p.nom) + '">' + echapper(p.nom) + '</button>'; }).join('') + '</div>';
       }
       afficher(h);
