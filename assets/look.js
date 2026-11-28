@@ -1354,7 +1354,7 @@
       return o;
     }
     function placer(f, sansTransition) {
-      var etroit = scene.offsetWidth < 600, pasX = etroit ? 46 : 40;
+      var etroit = scene.offsetWidth < 600, pasX = etroit ? 30 : 32;  // 28/11 : 30 et 32 (au lieu de 46 et 40) pour que l'éventail entier tienne dans sa zone
       arches.forEach(function (a, i) {
         var o = decalage(i, f), ab = Math.abs(o);
         // une arche qui passe d'un bout à l'autre de l'éventail ne doit pas traverser la scène : elle réapparaît en fondu
@@ -1420,7 +1420,7 @@
 
     // --- glisser au doigt / à la souris : l'éventail suit le geste ---
     var depart = null, f = 0, bouge = false, pasPx = 1;
-    function debut(x, y) { depart = { x: x, y: y, t: Date.now() }; bouge = false; f = 0; pasPx = Math.max(60, arches[avant].offsetWidth * (scene.offsetWidth < 600 ? .46 : .40)); }
+    function debut(x, y) { depart = { x: x, y: y, t: Date.now() }; bouge = false; f = 0; pasPx = Math.max(60, arches[avant].offsetWidth * (scene.offsetWidth < 600 ? .30 : .32)); }
     function mouvement(x, y, ev) {
       if (!depart) return;
       var dx = x - depart.x, dy = y - depart.y;

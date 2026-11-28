@@ -874,3 +874,11 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
 @media (min-width: 900px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 31rem); } }
 .recherche-champ input { text-overflow: ellipsis; }
 @media (min-width: 1100px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 34rem); } }
+
+/* 28/11/2026 (test arches entières) : la taille des arches de l'accueil ne dépendait que de la hauteur de l'écran.
+   Quand leur zone est étroite (ordinateur en deux colonnes, fenêtre réduite, iPhone), les arches des côtés
+   dépassaient et étaient coupées. Maintenant la taille suit aussi la largeur de la zone : l'éventail tient en entier. */
+.intro-bloc { container-type: inline-size; }
+.intro-scene { --hs: min(var(--h), 100cqw * .9); height: var(--hs); }
+.intro-arche { height: calc(var(--hs) * .88); width: calc(var(--hs) * .88 * 2 / 3); }
+@container (max-width: 599px) { .intro-scene { --hs: min(var(--h), 100cqw * .93); } }
