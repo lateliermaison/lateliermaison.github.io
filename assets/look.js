@@ -1768,9 +1768,34 @@
     if (premiere) svg.classList.add('lm-intro');
   }
 
+  // 28/11/2026 : le texte d'aide de la recherche était coupé (« … ou décrivez votr »).
+  // On garde la phrase entière quand elle tient dans le champ, sinon une version plus courte qui tient.
+  function texteRechercheAjuste() {
+    var VERSIONS = ['Une pièce, une couleur… ou décrivez votre idée', 'Une pièce, une couleur ou une idée…', 'Pièce, couleur ou idée…', 'Rechercher…'];
+    var champs = document.querySelectorAll('.recherche-champ input');
+    if (!champs.length) return;
+    var ctx = document.createElement('canvas').getContext('2d');
+    function ajuster(input) {
+      var micro = input.parentNode.querySelector('.recherche-micro');
+      if (micro && micro.classList.contains('ecoute')) return;
+      var st = getComputedStyle(input);
+      var place = input.clientWidth - parseFloat(st.paddingLeft || 0) - parseFloat(st.paddingRight || 0) - 2;
+      if (place <= 0 || !ctx) return;
+      ctx.font = st.fontStyle + ' ' + st.fontWeight + ' ' + st.fontSize + ' ' + st.fontFamily;
+      var choix = VERSIONS[VERSIONS.length - 1];
+      for (var i = 0; i < VERSIONS.length; i++) { if (ctx.measureText(VERSIONS[i]).width <= place) { choix = VERSIONS[i]; break; } }
+      if (input.placeholder !== choix) input.placeholder = choix;
+    }
+    function tout() { for (var i = 0; i < champs.length; i++) ajuster(champs[i]); }
+    if (window.ResizeObserver) { var ro = new ResizeObserver(tout); for (var i = 0; i < champs.length; i++) ro.observe(champs[i]); }
+    else window.addEventListener('resize', tout);
+    tout();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(tout);
+  }
+
   function demarrer() {
     hautDePage(); logoAnime();
-    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
+    bandeauPinterest(); temoinExclu(); filtres(); menuSite(); rechercheSite(); texteRechercheAjuste(); ideesVivantes(); demoAtelier(); introAccueil(); murLooks(); enteteCollante();
     noterLook();
     var main = document.querySelector('main');
     if (main) { if (main.querySelector('.look')) { initPage(main); apparitionPastilles(main, 180); } else liensAmazon(main); }

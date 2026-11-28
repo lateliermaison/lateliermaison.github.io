@@ -869,3 +869,8 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
    on les montre seulement quand il y a la place (Pinterest dès 960 px, « Comment naît un look » dès 1040 px). */
 @media (max-width: 959px) { .entete .lien-pinterest { display: none; } }
 @media (min-width: 880px) and (max-width: 1039px) { .lien-atelier-entete { display: none; } }
+/* 28/11/2026 : sur ordinateur, la barre de recherche de l'accueil est un peu plus large, pour que
+   « Une pièce, une couleur… ou décrivez votre idée » tienne en entier (sinon look.js prend une version plus courte). */
+@media (min-width: 900px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 31rem); } }
+.recherche-champ input { text-overflow: ellipsis; }
+@media (min-width: 1100px) { .accueil-titre { grid-template-columns: minmax(0, 1fr) minmax(21.25rem, 34rem); } }
