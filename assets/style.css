@@ -852,3 +852,20 @@ html.passage .filtres, html.passage .look-visuel { transition: none; }
 .logo-anime.lm-intro .lm-eteint { animation: lm-allume 1.1s cubic-bezier(.5, 0, .3, 1) both; }
 @keyframes lm-allume { 0% { opacity: .92; } 35% { opacity: .55; } 45% { opacity: .8; } 100% { opacity: 0; } }
 .logo-anime.lm-fixe .lm-souffle, .logo-anime.lm-fixe .lm-reflet { animation: none; }
+
+/* 28/11/2026 (test menu iPhone) : sur un grand iPhone (plus de 420 px de large : Plus, Pro Max), le logo gardait
+   sa taille d'ordinateur (283 px de large) et poussait le bouton « Menu » hors de l'écran (page plus large que l'écran).
+   Le logo ne change pas : seule sa taille d'affichage suit maintenant la largeur de l'écran jusqu'à 600 px,
+   pour laisser toujours la place à la loupe et au bouton Menu. Très petit écran (moins de 360 px) : Menu en icône seule. */
+@media (max-width: 600px) {
+  .marque .logo-anime, .marque img { height: clamp(22px, calc((100vw - 200px) / 6.43), 38px); }
+}
+@media (max-width: 359px) {
+  .menu-bouton { font-size: 0; gap: 0; padding: 10px 11px; }
+  .marque .logo-anime, .marque img { height: clamp(20px, calc((100vw - 150px) / 6.43), 30px); }
+}
+/* Même test : entre 604 et 904 px (tablette en portrait), « Suivre sur Pinterest » et « Comment naît un look »
+   poussaient aussi le bouton Menu hors de l'écran. Ces deux liens restent dans le Menu ; dans la barre du haut,
+   on les montre seulement quand il y a la place (Pinterest dès 960 px, « Comment naît un look » dès 1040 px). */
+@media (max-width: 959px) { .entete .lien-pinterest { display: none; } }
+@media (min-width: 880px) and (max-width: 1039px) { .lien-atelier-entete { display: none; } }
